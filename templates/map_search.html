@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Dating GIS App</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <form class="filter-bar" method="GET">
+        <select name="gender">
+            <option value="ALL">Mọi giới tính</option>
+            <option value="Nam" {% if selected_gender == 'Nam' %}selected{% endif %}>Nam</option>
+            <option value="Nữ" {% if selected_gender == 'Nữ' %}selected{% endif %}>Nữ</option>
+        </select>
+        <input type="number" name="radius" value="{{ radius }}" placeholder="Bán kính (km)" style="width: 100px;">
+        <button type="submit" class="btn-search">Tìm kiếm</button>
+    </form>
+
+    <div class="app-container">
+        <div class="left-panel">
+            <img id="p-avatar" class="avatar" src="">
+            <h2 id="p-name">Loading...</h2>
+            <div class="sub-text" id="p-address">...</div>
+
+            <button class="btn-route" onclick="alert('Đã gửi lời chào!')">👋 Nhắn tin</button>
+            
+            <div id="mini-map"></div>
+            <div class="sub-text" style="margin-top: 5px;">
+                Dùng phím <i class="fas fa-arrow-left"></i> <i class="fas fa-arrow-right"></i> để lướt
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div id="p-cover" class="banner"></div>
+            <div class="info-content">
+                <div class="section-title">Thông tin</div>
+                <p>📍 Cách bạn: <b id="p-dist" style="color: #5865f2">...</b> km</p>
+                <p>🎂 Tuổi: <span id="p-age">...</span> • Giới tính: <span id="p-gender">...</span></p>
+
+                <div class="section-title">Sở thích</div>
+                <div id="p-hobbies"></div>
+
+                <div class="section-title">Playlist nhạc</div>
+                <div id="p-playlist"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Nhận dữ liệu từ Django View
+        const users = {{ results|safe }}; 
+        const myLat = {{ my_profile.latitude }};
+        const myLon = {{ my_profile.longitude }};
+        
+        let currentIndex = 0;
+        let map, routeLayer;
+
+        // Khởi tạo bản đồ
+        function initMap() {
+            map = L.map('mini-map').setView([myLat, myLon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            
+            // Vẽ marker của TÔI
+            L.marker([myLat, myLon]).addTo(map).bindPopup("Bạn đang ở đây").openPopup();
+        }
+
+        // Hàm hiển thị User lên màn hình
+        function renderUser(index) {
+            if(users.length === 0) {
+                document.getElementById('p-name').innerText = "Không tìm thấy ai!";
+                return;
+            }
+            const u = users[index];
+
+            // Điền thông tin text
+            document.getElementById('p-name').innerText = u.name;
+            document.getElementById('p-address').innerText = u.address;
+            document.getElementById('p-age').innerText = u.age;
+            document.getElementById('p-gender').innerText = u.gender;
+            document.getElementById('p-dist').innerText = u.distance;
+
+            // Ảnh
+            document.getElementById('p-avatar').src = u.avatar || 'https://via.placeholder.com/150';
+            const cover = document.getElementById('p-cover');
+            if(u.cover) cover.style.backgroundImage = `url(${u.cover})`;
+            else cover.style.backgroundColor = '#bfa1d6';
+
+            // Sở thích & Nhạc
+            const hobbyDiv = document.getElementById('p-hobbies');
+            hobbyDiv.innerHTML = u.hobbies.map(h => `<span class="tag">${h}</span>`).join('');
+            
+            const musicDiv = document.getElementById('p-playlist');
+            musicDiv.innerHTML = u.playlist.map(s => `<div class="tag" style="background:#1db954; color:black">🎵 ${s}</div>`).join('');
+
+            // Tự động tìm đường
+            findRoute(u.lat, u.lon);
+        }
+
+        // Hàm gọi API tìm đường
+        function findRoute(targetLat, targetLon) {
+            // Xóa đường cũ
+            if(routeLayer) map.removeLayer(routeLayer);
+
+            // API nội bộ của Django mình vừa viết
+            fetch(`/api/route/?lat1=${myLat}&lon1=${myLon}&lat2=${targetLat}&lon2=${targetLon}`)
+                .then(res => res.json())
+                .then(data => {
+                    if(data.geometry) {
+                        routeLayer = L.geoJSON(data.geometry, {color: 'blue', weight: 4}).addTo(map);
+                        map.fitBounds(routeLayer.getBounds());
+                    }
+                });
+        }
+
+        // Lắng nghe phím mũi tên
+        document.addEventListener('keydown', (e) => {
+            if(users.length === 0) return;
+            if(e.key === "ArrowRight") {
+                currentIndex = (currentIndex + 1) % users.length;
+                renderUser(currentIndex);
+            } else if(e.key === "ArrowLeft") {
+                currentIndex = (currentIndex - 1 + users.length) % users.length;
+                renderUser(currentIndex);
+            }
+        });
+
+        initMap();
+        renderUser(0);
+    </script>
+</body>
+</html>
