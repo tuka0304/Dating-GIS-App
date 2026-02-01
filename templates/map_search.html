@@ -11,65 +11,159 @@
 <body>
 
     <form class="filter-bar" method="GET">
+        <select name="province" id="province-select" onchange="toggleRadius()" style="margin-right: 10px;">
+            <option value="ALL">Tất cả khu vực</option>
+            {% for code, name in provinces %}
+                <option value="{{ code }}" {% if selected_province == code %}selected{% endif %}>
+                    {{ name }}
+                </option>
+            {% endfor %}
+        </select>
+
         <select name="gender">
             <option value="ALL">Mọi giới tính</option>
             <option value="Nam" {% if selected_gender == 'Nam' %}selected{% endif %}>Nam</option>
             <option value="Nữ" {% if selected_gender == 'Nữ' %}selected{% endif %}>Nữ</option>
         </select>
-        <input type="number" name="radius" value="{{ radius }}" placeholder="Bán kính (km)" style="width: 100px;">
+        
+        <input type="number" id="radius-input" name="radius" value="{{ radius }}" placeholder="Bán kính (km)" style="width: 100px;">
+        
         <button type="submit" class="btn-search">Tìm kiếm</button>
     </form>
 
     <div class="app-container">
+        
         <div class="left-panel">
             <img id="p-avatar" class="avatar" src="">
             <h2 id="p-name">Loading...</h2>
             <div class="sub-text" id="p-address">...</div>
 
-            <button class="btn-route" onclick="alert('Đã gửi lời chào!')">👋 Nhắn tin</button>
+            <button class="btn-route" onclick="openChat()">💬 Nhắn tin</button>
             
-            <div id="mini-map"></div>
-            <div class="sub-text" style="margin-top: 5px;">
-                Dùng phím <i class="fas fa-arrow-left"></i> <i class="fas fa-arrow-right"></i> để lướt
+            <div class="second-photo-slot">
+                <img id="img-personal-spot" class="second-photo" src="https://via.placeholder.com/300x200?text=No+Image">
+                <div class="photo-label">Ảnh nổi bật</div>
+            </div>
+
+            <div class="nav-controls" style="display: flex; justify-content: center; gap: 15px; margin-top: 15px;">
+                <button onclick="prevUser()" style="background: #2b2d31; color: white; border: 1px solid #1e1f22; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                    ⬅️ Trước
+                </button>
+                <button onclick="nextUser()" style="background: #2b2d31; color: white; border: 1px solid #1e1f22; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                    Sau ➡️
+                </button>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <a href="{% url 'logout' %}" style="color: #f23f42; font-size: 12px; text-decoration: none;">[Đăng xuất]</a>
+            </div>
+
+            <div style="margin-top: 15px; text-align: center;">
+                <a href="{% url 'settings' %}" style="display: inline-block; background: #4e5058; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: bold; border: 1px solid #6d6f78;">
+                    ⚙️ Cài đặt hồ sơ
+                </a>
             </div>
         </div>
 
         <div class="right-panel">
-            <div id="p-cover" class="banner"></div>
-            <div class="info-content">
-                <div class="section-title">Thông tin</div>
-                <p>📍 Cách bạn: <b id="p-dist" style="color: #5865f2">...</b> km</p>
-                <p>🎂 Tuổi: <span id="p-age">...</span> • Giới tính: <span id="p-gender">...</span></p>
-
-                <div class="section-title">Sở thích</div>
-                <div id="p-hobbies"></div>
-
-                <div class="section-title">Playlist nhạc</div>
-                <div id="p-playlist"></div>
+            <div class="map-header-container">
+                <div id="mini-map"></div>
             </div>
+            
+            <div class="profile-nav">
+                <button class="nav-btn active" onclick="switchTab('info', this)">Thông tin</button>
+                <button class="nav-btn" onclick="switchTab('photos', this)">Ảnh</button>
+                <button class="nav-btn" onclick="switchTab('music', this)">Âm nhạc</button>
+            </div>
+
+            <div class="info-content">
+                <div id="tab-info" class="tab-content active">
+                    <div class="section-title">Giới thiệu</div>
+                    <p>📍 Cách bạn: <b id="p-dist" style="color: #5865f2">...</b> km</p>
+                    <p>🎂 Tuổi: <span id="p-age">...</span> • Giới tính: <span id="p-gender">...</span></p>
+                    <p style="color: #dbdee1; line-height: 1.5; font-style: italic;" id="p-bio">...</p>
+                    <div class="section-title">Sở thích</div>
+                    <div id="p-hobbies"></div>
+                </div>
+
+                <div id="tab-photos" class="tab-content">
+                    <div class="section-title">Thư viện ảnh</div>
+                    <div class="photo-gallery">
+                        <div><p class="sub-text">Ảnh đại diện</p><img id="img-avatar-full" class="gallery-img" src=""></div>
+                        <div><p class="sub-text">Ảnh bìa / Nổi bật</p><img id="img-cover-full" class="gallery-img" src=""></div>
+                    </div>
+                </div>
+
+                <div id="tab-music" class="tab-content">
+                    <div class="section-title">Playlist Yêu Thích</div>
+                    <div id="p-playlist"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-modal" class="chat-box" style="display: none;">
+        <div class="chat-header">
+            <span id="chat-partner-name">Chat</span>
+            <button onclick="closeChat()" style="background:none; border:none; color:white; cursor:pointer;">✖</button>
+        </div>
+        <div id="chat-history" class="chat-content">
+            </div>
+        <div class="chat-input-area">
+            <input type="text" id="msg-input" placeholder="Nhập tin nhắn..." onkeypress="handleEnter(event)">
+            <button onclick="sendMessage()">Gửi ➤</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Nhận dữ liệu từ Django View
+        // --- DỮ LIỆU TỪ SERVER ---
         const users = {{ results|safe }}; 
         const myLat = {{ my_profile.latitude }};
         const myLon = {{ my_profile.longitude }};
         
         let currentIndex = 0;
         let map, routeLayer;
+        let chatInterval; 
+        let currentPartnerId = null;
 
-        // Khởi tạo bản đồ
+        // --- KHỞI TẠO MAP ---
         function initMap() {
-            map = L.map('mini-map').setView([myLat, myLon], 13);
+            map = L.map('mini-map', {zoomControl: false}).setView([myLat, myLon], 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            
-            // Vẽ marker của TÔI
             L.marker([myLat, myLon]).addTo(map).bindPopup("Bạn đang ở đây").openPopup();
+            L.control.zoom({position: 'bottomright'}).addTo(map);
         }
 
-        // Hàm hiển thị User lên màn hình
+        // --- HÀM 1: BẬT TẮT Ô BÁN KÍNH ---
+        function toggleRadius() {
+            const provinceSelect = document.getElementById('province-select');
+            const radiusInput = document.getElementById('radius-input');
+
+            if (provinceSelect.value !== 'ALL') {
+                // Nếu chọn Tỉnh -> Khóa ô Bán kính
+                radiusInput.disabled = true;
+                radiusInput.style.opacity = "0.5";
+                radiusInput.style.cursor = "not-allowed";
+                radiusInput.value = ""; 
+            } else {
+                // Nếu chọn Tất cả -> Mở ô Bán kính
+                radiusInput.disabled = false;
+                radiusInput.style.opacity = "1";
+                radiusInput.style.cursor = "text";
+                if(!radiusInput.value) radiusInput.value = 10;
+            }
+        }
+
+        // --- HÀM 2: CHUYỂN TAB ---
+        function switchTab(tabName, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            if(btnElement) btnElement.classList.add('active');
+        }
+
+        // --- HÀM 3: HIỂN THỊ NGƯỜI DÙNG ---
         function renderUser(index) {
             if(users.length === 0) {
                 document.getElementById('p-name').innerText = "Không tìm thấy ai!";
@@ -77,60 +171,138 @@
             }
             const u = users[index];
 
+            // Cập nhật biến toàn cục để Chat biết đang chat với ai
+            currentPartnerId = u.id; 
+
             // Điền thông tin text
             document.getElementById('p-name').innerText = u.name;
             document.getElementById('p-address').innerText = u.address;
             document.getElementById('p-age').innerText = u.age;
             document.getElementById('p-gender').innerText = u.gender;
             document.getElementById('p-dist').innerText = u.distance;
+            document.getElementById('p-bio').innerText = u.bio || "Chưa có giới thiệu.";
 
             // Ảnh
-            document.getElementById('p-avatar').src = u.avatar || 'https://via.placeholder.com/150';
-            const cover = document.getElementById('p-cover');
-            if(u.cover) cover.style.backgroundImage = `url(${u.cover})`;
-            else cover.style.backgroundColor = '#bfa1d6';
+            const avatarUrl = u.avatar || 'https://via.placeholder.com/150';
+            const coverUrl = u.cover || 'https://via.placeholder.com/300x200?text=No+Cover'; 
 
-            // Sở thích & Nhạc
+            document.getElementById('p-avatar').src = avatarUrl;
+            document.getElementById('img-avatar-full').src = avatarUrl;
+            document.getElementById('img-personal-spot').src = coverUrl;
+            document.getElementById('img-cover-full').src = coverUrl;
+
+            // Sở thích
             const hobbyDiv = document.getElementById('p-hobbies');
             hobbyDiv.innerHTML = u.hobbies.map(h => `<span class="tag">${h}</span>`).join('');
             
+            // Nhạc
             const musicDiv = document.getElementById('p-playlist');
-            musicDiv.innerHTML = u.playlist.map(s => `<div class="tag" style="background:#1db954; color:black">🎵 ${s}</div>`).join('');
+            musicDiv.innerHTML = u.playlist.map(s => `
+                <div style="background:#2b2d31; padding:10px; margin:5px 0; border-radius:5px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-music" style="color:#1db954"></i><span>${s}</span>
+                </div>`).join('');
 
-            // Tự động tìm đường
+            // Vẽ đường đi
             findRoute(u.lat, u.lon);
         }
 
-        // Hàm gọi API tìm đường
+        // --- HÀM 4: VẼ ĐƯỜNG (OSRM) ---
         function findRoute(targetLat, targetLon) {
-            // Xóa đường cũ
             if(routeLayer) map.removeLayer(routeLayer);
+            
+            // Nếu khoảng cách quá xa (>50km) hoặc là 0km thì không vẽ để đỡ rối
+            if(targetLat === myLat && targetLon === myLon) return;
 
-            // API nội bộ của Django mình vừa viết
-            fetch(`/api/route/?lat1=${myLat}&lon1=${myLon}&lat2=${targetLat}&lon2=${targetLon}`)
+            fetch(`https://router.project-osrm.org/route/v1/driving/${myLon},${myLat};${targetLon},${targetLat}?overview=full&geometries=geojson`)
                 .then(res => res.json())
                 .then(data => {
-                    if(data.geometry) {
-                        routeLayer = L.geoJSON(data.geometry, {color: 'blue', weight: 4}).addTo(map);
-                        map.fitBounds(routeLayer.getBounds());
+                    if(data.routes && data.routes.length > 0) {
+                        routeLayer = L.geoJSON(data.routes[0].geometry, {color: '#5865f2', weight: 5}).addTo(map);
+                        map.fitBounds(routeLayer.getBounds(), {padding: [20, 20]});
                     }
+                })
+                .catch(err => console.log("Lỗi vẽ đường:", err));
+        }
+
+        // --- HÀM 5: CHUYỂN NGƯỜI (NEXT/PREV) ---
+        function nextUser() {
+            if(users.length === 0) return;
+            currentIndex = (currentIndex + 1) % users.length;
+            renderUser(currentIndex);
+        }
+        function prevUser() {
+            if(users.length === 0) return;
+            currentIndex = (currentIndex - 1 + users.length) % users.length;
+            renderUser(currentIndex);
+        }
+
+        // --- HÀM 6: CHỨC NĂNG CHAT ---
+        function openChat() {
+            if(!currentPartnerId) { alert("Không tìm thấy ID người dùng!"); return; }
+            document.getElementById('chat-modal').style.display = 'flex';
+            document.getElementById('chat-partner-name').innerText = "Chat với " + users[currentIndex].name;
+            
+            loadMessages();
+            if(chatInterval) clearInterval(chatInterval);
+            chatInterval = setInterval(loadMessages, 2000); // Auto load 2s/lần
+        }
+
+        function closeChat() {
+            document.getElementById('chat-modal').style.display = 'none';
+            if(chatInterval) clearInterval(chatInterval);
+        }
+
+        function loadMessages() {
+            if(!currentPartnerId) return;
+            fetch(`/api/chat/history/${currentPartnerId}/`)
+                .then(res => res.json())
+                .then(data => {
+                    const chatDiv = document.getElementById('chat-history');
+                    chatDiv.innerHTML = ""; 
+                    data.messages.forEach(m => {
+                        chatDiv.innerHTML += `<div class="msg ${m.sender}">${m.content}</div>`;
+                    });
+                    chatDiv.scrollTop = chatDiv.scrollHeight;
                 });
         }
 
-        // Lắng nghe phím mũi tên
-        document.addEventListener('keydown', (e) => {
-            if(users.length === 0) return;
-            if(e.key === "ArrowRight") {
-                currentIndex = (currentIndex + 1) % users.length;
-                renderUser(currentIndex);
-            } else if(e.key === "ArrowLeft") {
-                currentIndex = (currentIndex - 1 + users.length) % users.length;
-                renderUser(currentIndex);
-            }
+        function sendMessage() {
+            const input = document.getElementById('msg-input');
+            const content = input.value;
+            if(!content) return;
+            
+            fetch('/api/chat/send/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    receiver_id: currentPartnerId,
+                    content: content
+                })
+            }).then(res => res.json()).then(data => {
+                if(data.status === 'ok') {
+                    input.value = ""; 
+                    loadMessages(); 
+                }
+            });
+        }
+
+        function handleEnter(e) {
+            if(e.key === 'Enter') sendMessage();
+        }
+
+        // --- KHỞI CHẠY ---
+        document.addEventListener("DOMContentLoaded", () => {
+            initMap();
+            toggleRadius(); // Gọi ngay để check trạng thái ban đầu
+            renderUser(0);
         });
 
-        initMap();
-        renderUser(0);
+        // Hỗ trợ phím mũi tên
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowRight") nextUser();
+            if (e.key === "ArrowLeft") prevUser();
+        });
+
     </script>
 </body>
 </html>

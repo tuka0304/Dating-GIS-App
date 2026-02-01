@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Cài đặt hồ sơ</title>
+    <style>
+        body { background-color: #313338; color: #dbdee1; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #2b2d31; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        h2 { color: #f2f3f5; border-bottom: 2px solid #1e1f22; padding-bottom: 10px; margin-top: 0; }
+        
+        /* Form Style */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #b5bac1; }
+        .form-input { 
+            width: 100%; padding: 10px; background: #1e1f22; border: 1px solid #1e1f22; 
+            color: white; border-radius: 4px; box-sizing: border-box; font-family: inherit;
+        }
+        .form-input:focus { outline: none; border-color: #5865f2; }
+        
+        /* Grid Layout cho đẹp */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        /* Buttons */
+        .btn-save { 
+            background: #248046; color: white; border: none; padding: 12px 25px; 
+            border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px; 
+        }
+        .btn-cancel { 
+            background: #da373c; color: white; text-decoration: none; padding: 12px 25px; 
+            border-radius: 4px; font-weight: bold; font-size: 16px; margin-left: 10px;
+        }
+        
+        /* Upload Image Preview Styling */
+        input[type="file"] { background: #111214; padding: 10px; width: 100%; }
+        .help-text { font-size: 12px; color: #949ba4; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>✏️ Chỉnh sửa hồ sơ cá nhân</h2>
+        
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Họ và tên:</label> {{ form.full_name }}
+                </div>
+                <div class="form-group">
+                    <label>Ngày sinh:</label> {{ form.birth_date }}
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Giới tính:</label> {{ form.gender }}
+                </div>
+                <div class="form-group">
+                    <label>Khu vực sinh sống:</label> {{ form.province }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Địa chỉ chi tiết (Hiện trên map):</label> {{ form.address }}
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #3f4147; margin: 20px 0;">
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>📸 Ảnh đại diện (Avatar):</label>
+                    {{ form.avatar }}
+                </div>
+                <div class="form-group">
+                    <label>🖼️ Ảnh nổi bật (Hiển thị trang chủ):</label>
+                    {{ form.cover_photo }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>📝 Status / Bio (Giới thiệu bản thân):</label>
+                {{ form.bio }}
+            </div>
+
+            <div class="form-group">
+                <label>⚽ Sở thích:</label>
+                {{ form.hobbies }}
+            </div>
+
+            <div class="form-group">
+                <label>🎵 Bài hát yêu thích (Mỗi dòng 1 bài):</label>
+                {{ form.music_playlist }}
+            </div>
+
+            <div style="margin-top: 30px; text-align: right;">
+                <button type="submit" class="btn-save">Lưu thay đổi</button>
+                <a href="{% url 'home' %}" class="btn-cancel">Hủy</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

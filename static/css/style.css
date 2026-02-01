@@ -105,11 +105,6 @@ h2 { margin: 5px 0; color: #f2f3f5; }
     overflow-y: auto;
 }
 
-.banner {
-    height: 150px;
-    background-color: #bfa1d6;
-    background-size: cover;
-}
 
 .info-content { padding: 20px; }
 
@@ -129,4 +124,120 @@ h2 { margin: 5px 0; color: #f2f3f5; }
     margin: 2px;
     border-radius: 4px;
     font-size: 13px;
+}
+/* --- PHẦN TAB MENU MỚI --- */
+.profile-nav {
+    display: flex;
+    background-color: #111214;
+    padding: 0 20px;
+    border-bottom: 1px solid #1e1f22;
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    color: #b5bac1;
+    padding: 15px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+    transition: 0.2s;
+}
+
+.nav-btn:hover {
+    color: #f2f3f5;
+    background-color: #1e1f22;
+}
+
+/* Tab đang chọn sẽ sáng lên và có gạch chân */
+.nav-btn.active {
+    color: #f2f3f5;
+}
+.nav-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 2px;
+    background-color: #5865f2;
+}
+
+/* Ẩn hiện nội dung Tab */
+.tab-content {
+    display: none; /* Mặc định ẩn */
+    animation: fadeIn 0.3s;
+}
+.tab-content.active {
+    display: block; /* Có class active mới hiện */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Style cho phần Ảnh */
+.photo-gallery {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+.gallery-img {
+    width: 100%;
+    border-radius: 8px;
+    border: 2px solid #2b2d31;
+}
+/* --- CẬP NHẬT GIAO DIỆN MỚI --- */
+
+/* 1. Style cho Bản đồ ở vị trí mới (Top Right) */
+.map-header-container {
+    width: 100%;
+    height: 250px; /* Tăng chiều cao lên cho map dễ nhìn */
+    position: relative;
+    border-bottom: 3px solid #1e1f22;
+    background-color: #2b2d31; /* Màu nền khi chưa load map */
+}
+
+/* Ghi đè lại style cũ của #mini-map */
+#mini-map {
+    width: 100%;
+    height: 100%;
+    border-radius: 0; /* Map ở trên cùng nên không cần bo góc */
+    border: none;
+    margin-top: 0;
+}
+
+
+/* 2. Style cho Ảnh cá nhân mới (Bottom Left) */
+.second-photo-slot {
+    width: 100%;
+    height: 200px; /* Chiều cao bằng map cũ */
+    margin-top: 15px;
+    border-radius: 8px;
+    border: 2px solid #1e1f22;
+    overflow: hidden;
+    background-color: #1e1f22;
+    position: relative;
+}
+
+/* Ảnh bên trong slot */
+.second-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Đảm bảo ảnh luôn lấp đầy khung */
+    display: block;
+}
+
+/* Label cho ảnh */
+.photo-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 5px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #b5bac1;
+    font-size: 12px;
+    text-align: center;
 }

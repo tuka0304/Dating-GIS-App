@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng ký tài khoản</title>
+    <style>
+        body { background-color: #313338; color: #dbdee1; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #2b2d31; padding: 40px; border-radius: 8px; width: 350px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align: center; }
+        h2 { color: #f2f3f5; margin-bottom: 20px; }
+        /* Style lại các input mặc định của Django cho đẹp */
+        p { margin: 10px 0; text-align: left; }
+        label { display: block; font-size: 13px; font-weight: bold; color: #b5bac1; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; background: #1e1f22; border: 1px solid #1e1f22; color: white; border-radius: 4px; box-sizing: border-box; }
+        input:focus { outline: none; border-color: #248046; }
+        .helptext { display: none; } /* Ẩn bớt hướng dẫn rườm rà */
+        ul { list-style: none; padding: 0; color: #fa777c; font-size: 12px; text-align: left; }
+        
+        button { width: 100%; padding: 12px; background: #248046; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 16px; transition: 0.2s; }
+        button:hover { background: #1a6334; }
+        a { color: #00a8fc; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Tạo tài khoản mới 🚀</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Đăng ký</button>
+        </form>
+        <div style="margin-top: 20px; font-size: 14px; color: #949ba4;">
+            Đã có tài khoản? <a href="{% url 'login' %}">Đăng nhập</a>
+        </div>
+    </div>
+</body>
+</html>
