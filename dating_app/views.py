@@ -12,7 +12,6 @@ from django.db.models import Q
 from django.utils import timezone 
 from geopy.geocoders import Nominatim
 
-# BỔ SUNG THÊM DatingRequest VÀO ĐÂY
 from .models import UserProfile, Message, PROVINCE_CHOICES, FriendRequest, DatingRequest
 from .gis_tools import DatingGISTool
 from .forms import RegisterForm, ProfileUpdateForm
@@ -128,9 +127,9 @@ def map_search_view(request):
             'name': u.full_name,
             'gender': u.gender,
             'age': u.get_age(),
-            'marital_status': display_marital, # <-- Đã cập nhật dòng này
+            'marital_status': display_marital,
             'rel_status': rel_status,
-            'dating_rel_status': dating_rel_status, # <-- Đã thêm dòng này
+            'dating_rel_status': dating_rel_status, 
             'status': u.bio[:30] + '...' if u.bio else 'Đang online',
             'address': u.address,
             'lat': u.latitude,
@@ -181,20 +180,20 @@ def get_messages(request, user_id):
 @csrf_exempt
 @login_required
 def send_message(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            receiver_id = data.get('receiver_id')
-            content = data.get('content')
-            Message.objects.create(
-                sender=request.user,
-                receiver=User.objects.get(id=receiver_id),
-                content=content
-            )
-            return JsonResponse({'status': 'ok'})
-        except Exception:
-            return JsonResponse({'status': 'error'})
-    return JsonResponse({'status': 'error'})
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)
+                receiver_id = data.get('receiver_id')
+                content = data.get('content')
+                Message.objects.create(
+                    sender=request.user,
+                    receiver=User.objects.get(id=receiver_id),
+                    content=content
+                )
+                return JsonResponse({'status': 'ok'})
+            except Exception:
+                return JsonResponse({'status': 'error'})
+        return JsonResponse({'status': 'error'})
 
 @login_required
 def get_conversations(request):
@@ -324,7 +323,7 @@ def logout_view(request):
     return redirect('login')
 
 # ==========================================
-# 5. API KẾT BẠN & HẸN HÒ 
+# 5. API KẾT BẠN, HẸN HÒ & THÔNG BÁO
 # ==========================================
 
 @login_required
@@ -364,16 +363,23 @@ def cancel_friend_request(request, user_id):
         return JsonResponse({'status': 'ok', 'message': 'Đã thu hồi'})
     except Exception: return JsonResponse({'status': 'error'})
 
-@login_required
-def get_friend_requests(request):
-    requests = FriendRequest.objects.filter(receiver=request.user, status='pending')
-    data = []
-    for req in requests:
-        avatar_url = req.sender.profile.avatar.url if req.sender.profile.avatar else ""
-        data.append({'req_id': req.id, 'sender_id': req.sender.id, 'name': req.sender.profile.full_name, 'avatar': avatar_url})
-    return JsonResponse({'requests': data})
 
-# --- BỘ 3 HÀM XỬ LÝ TỎ TÌNH & HẸN HÒ MỚI ---
+# --- BỘ HÀM XỬ LÝ TRUNG TÂM THÔNG BÁO ---
+@login_required
+def get_all_requests(request):
+    """Gộp chung cả Lời mời kết bạn và Lời hẹn hò vào 1 API"""
+    # 1. Lấy lời mời kết bạn
+    f_reqs = FriendRequest.objects.filter(receiver=request.user, status='pending')
+    friend_data = [{'req_id': req.id, 'sender_id': req.sender.id, 'name': req.sender.profile.full_name, 'avatar': req.sender.profile.avatar.url if req.sender.profile.avatar else ""} for req in f_reqs]
+
+    # 2. Lấy lời mời hẹn hò
+    d_reqs = DatingRequest.objects.filter(receiver=request.user, status='pending')
+    dating_data = [{'sender_id': req.sender.id, 'name': req.sender.profile.full_name, 'avatar': req.sender.profile.avatar.url if req.sender.profile.avatar else ""} for req in d_reqs]
+
+    return JsonResponse({'friend_requests': friend_data, 'dating_requests': dating_data})
+
+
+# --- BỘ HÀM XỬ LÝ HẸN HÒ ---
 @login_required
 def send_dating_request(request, user_id):
     try:
@@ -384,7 +390,7 @@ def send_dating_request(request, user_id):
             return JsonResponse({'status': 'error', 'message': 'Bạn đã có người yêu rồi! Bắt cá 2 tay là không tốt đâu nhé!'})
             
         DatingRequest.objects.get_or_create(sender=request.user, receiver=receiver, defaults={'status': 'pending'})
-        return JsonResponse({'status': 'ok', 'message': 'Đã gửi lời tỏ tình! Hãy chờ người ấy đồng ý ❤️'})
+        return JsonResponse({'status': 'ok', 'message': 'Đã gửi lời hẹn hò! Hãy chờ người ấy đồng ý ❤️'})
     except Exception:
         return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý'})
 
@@ -393,7 +399,7 @@ def cancel_dating_request(request, user_id):
     try:
         receiver = User.objects.get(id=user_id)
         DatingRequest.objects.filter(sender=request.user, receiver=receiver, status='pending').delete()
-        return JsonResponse({'status': 'ok', 'message': 'Đã rút lại lời tỏ tình 💔'})
+        return JsonResponse({'status': 'ok', 'message': 'Đã rút lại lời hẹn hò 💔'})
     except Exception:
         return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý'})
 
@@ -424,3 +430,13 @@ def accept_dating_request(request, user_id):
         return JsonResponse({'status': 'ok', 'message': f'Chúc mừng! Bạn và {partner_profile.full_name} đã chính thức hẹn hò 💕'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý hoặc lời mời không tồn tại'})
+
+@login_required
+def reject_dating_request(request, user_id):
+    """Từ chối lời hẹn hò từ trong thông báo"""
+    try:
+        sender = User.objects.get(id=user_id)
+        DatingRequest.objects.filter(sender=sender, receiver=request.user, status='pending').delete()
+        return JsonResponse({'status': 'ok', 'message': 'Đã từ chối khéo người ta rồi nhé 💔'})
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý'})

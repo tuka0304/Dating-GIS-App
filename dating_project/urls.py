@@ -21,16 +21,17 @@ urlpatterns = [
     path('api/chat/send/', views.send_message, name='chat_send'),
     path('api/chat/list/', views.get_conversations, name='chat_list'),
 
-    # --- API KẾT BẠN ---
+   # --- API KẾT BẠN & THÔNG BÁO ---
     path('api/friend/send/<int:user_id>/', views.send_friend_request, name='send_friend_request'),
     path('api/friend/accept/<int:request_id>/', views.accept_friend_request, name='accept_friend_request'),
     path('api/friend/reject/<int:request_id>/', views.reject_friend_request, name='reject_friend_request'),
     path('api/friend/cancel/<int:user_id>/', views.cancel_friend_request, name='cancel_friend_request'),
-    path('api/friend/list_requests/', views.get_friend_requests, name='get_friend_requests'),
+    path('api/requests/list/', views.get_all_requests, name='get_all_requests'),
     
-    # --- API HẸN HÒ MỚI ---
+    # --- API HẸN HÒ ---
     path('api/dating/send/<int:user_id>/', views.send_dating_request, name='send_dating_request'),
     path('api/dating/cancel/<int:user_id>/', views.cancel_dating_request, name='cancel_dating_request'),
     path('api/dating/accept/<int:user_id>/', views.accept_dating_request, name='accept_dating_request'),
+    path('api/dating/reject/<int:user_id>/', views.reject_dating_request, name='reject_dating_request'),
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

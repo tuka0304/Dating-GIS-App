@@ -76,22 +76,23 @@ WSGI_APPLICATION = 'dating_project.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # dating_project/settings.py
-
 DATABASES = {
-    if 'DATABASE_URL' in os.environ:
-        DATABASES['default'] = dj_database_url.config(
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'dating_db',        # Tên DB bạn vừa tạo ở Bước 1
+        'USER': 'postgres',         # Tên đăng nhập mặc định
+        'PASSWORD': '123',          # Thay mật khẩu bạn đã đặt lúc cài Postgres vào đây
+        'HOST': 'localhost',        # Chạy trên máy cá nhân
+        'PORT': '5432',             # Cổng mặc định của Postgres
+    }
+}
+
+# --- Lệnh if phải nằm HẲN BÊN NGOÀI khối DATABASES ở trên ---
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(
         conn_max_age=600,
         ssl_require=True
     )
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dating_db',       # Tên DB bạn vừa tạo ở Bước 1
-        'USER': 'postgres',        # Tên đăng nhập mặc định
-        'PASSWORD': '123', # ⚠️ Thay mật khẩu bạn đã đặt lúc cài Postgres vào đây
-        'HOST': 'localhost',       # Chạy trên máy cá nhân
-        'PORT': '5432',            # Cổng mặc định của Postgres
-    }
-}
 
 
 # Password validation

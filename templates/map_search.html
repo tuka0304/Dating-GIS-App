@@ -205,7 +205,7 @@
     {{ results|json_script:"users-data" }}
 
     <div class="top-corner-group">
-        <div class="btn-bell" onclick="toggleFriendRequests()">
+        <div class="btn-bell" onclick="toggleRequests()">
             <i class="fas fa-bell"></i>
             <span class="badge" id="req-count" style="display: none;">0</span>
         </div>
@@ -250,7 +250,7 @@
                 <div class="action-group">
                     <button class="btn-action btn-chat-color" onclick="openChat()"><i class="fas fa-paper-plane"></i> Nhắn tin</button>
                     <button id="btn-friend" class="btn-action btn-friend-color" onclick="handleFriendAction()"><i class="fas fa-user-plus"></i> Kết bạn</button>
-                    <button id="btn-date" class="btn-action btn-date-color heartbeat-btn" style="flex: 1 1 100%;" onclick="setDating()"><i class="fas fa-heart"></i> Tỏ tình</button>
+                    <button id="btn-date" class="btn-action btn-date-color heartbeat-btn" style="flex: 1 1 100%;" onclick="setDating()"><i class="fas fa-heart"></i> Hẹn hò </button>
                 </div>
 
                 <div class="nav-controls">
@@ -318,8 +318,8 @@
 
     <div id="req-modal" class="chat-box">
         <div class="modal-header">
-            <span><i class="fas fa-user-friends"></i> Lời mời kết bạn</span>
-            <span onclick="toggleFriendRequests()" style="cursor: pointer;"><i class="fas fa-times"></i></span>
+            <span><i class="fas fa-bell"></i> Thông báo</span>
+            <span onclick="toggleRequests()" style="cursor: pointer;"><i class="fas fa-times"></i></span>
         </div>
         <div id="req-list" style="flex: 1; overflow-y: auto; padding: 10px;">
         </div>
@@ -346,7 +346,7 @@
             let map, routeLayer;
             let currentPartnerId = null;
             let currentRelStatus = 'none'; 
-            let currentDatingStatus = 'none'; // Thêm biến lưu trạng thái hẹn hò
+            let currentDatingStatus = 'none'; 
             let chatInterval;
 
             function initMap() {
@@ -408,7 +408,7 @@
                     btnDate.style.background = 'linear-gradient(45deg, #e91e63, #880e4f)';
                     btnDate.classList.add('heartbeat-btn');
                 } else if (currentDatingStatus === 'pending_sent') {
-                    btnDate.innerHTML = '<i class="fas fa-times"></i> Rút lời tỏ tình';
+                    btnDate.innerHTML = '<i class="fas fa-times"></i> Rút lời hẹn hò';
                     btnDate.style.background = '#95a5a6';
                     btnDate.classList.remove('heartbeat-btn');
                 } else if (currentDatingStatus === 'pending_received') {
@@ -416,7 +416,7 @@
                     btnDate.style.background = 'linear-gradient(45deg, #9b59b6, #8e44ad)';
                     btnDate.classList.add('heartbeat-btn');
                 } else {
-                    btnDate.innerHTML = '<i class="fas fa-heart"></i> Tỏ tình';
+                    btnDate.innerHTML = '<i class="fas fa-heart"></i> Hẹn hò';
                     btnDate.style.background = 'linear-gradient(45deg, #ff4081, #f50057)';
                     btnDate.classList.remove('heartbeat-btn');
                 }
@@ -431,7 +431,6 @@
                 if (u.playlist && u.playlist.length > 0) {
                     musicDiv.innerHTML = u.playlist.map(item => {
                         if (item.type === 'deezer' || item.type === 'soundcloud') {
-                            // Giữ thẻ iframe linh hoạt cho cả 2 loại link nhạc
                             return `<div style="margin-bottom: 10px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                                         ${item.type === 'deezer' 
                                             ? `<iframe src="https://widget.deezer.com/widget/dark/track/${item.value}" width="100%" height="80" frameBorder="0" allowtransparency="true" allow="encrypted-media; clipboard-write"></iframe>`
@@ -458,7 +457,7 @@
                 if (currentRelStatus === 'none') {
                     fetch(`/api/friend/send/${currentPartnerId}/`).then(res => res.json()).then(data => {
                         if(data.status === 'ok') {
-                            users[currentIndex].rel_status = 'pending_sent'; // Lưu tạm vào bộ nhớ để F5/Quay lại không bị reset
+                            users[currentIndex].rel_status = 'pending_sent'; 
                             renderUser(currentIndex);
                         } else alert(data.message);
                     });
@@ -489,11 +488,11 @@
                 if(!currentPartnerId) return;
                 
                 if (currentDatingStatus === 'none') {
-                    if(confirm("Bạn có chắc muốn tỏ tình với người này? Trái tim chỉ có một ngăn thôi nhé! ❤️")) {
+                    if(confirm("Bạn có chắc muốn gửi lời hẹn hò với người này? Trái tim chỉ có một ngăn thôi nhé! ❤️")) {
                         fetch(`/api/dating/send/${currentPartnerId}/`).then(res => res.json()).then(data => {
                             alert(data.message);
                             if(data.status === 'ok') {
-                                users[currentIndex].dating_rel_status = 'pending_sent'; // Cập nhật ngay lập tức
+                                users[currentIndex].dating_rel_status = 'pending_sent'; 
                                 renderUser(currentIndex);
                             }
                         });
@@ -524,60 +523,95 @@
                 }
             };
 
-            // --- XỬ LÝ CHUÔNG THÔNG BÁO KẾT BẠN ---
-            window.toggleFriendRequests = function() {
+            // --- XỬ LÝ CHUÔNG THÔNG BÁO TỔNG HỢP ---
+            window.toggleRequests = function() {
                 const modal = document.getElementById('req-modal');
                 if (modal.style.display === 'flex') {
                     modal.style.display = 'none';
                 } else {
                     modal.style.display = 'flex';
-                    fetch('/api/friend/list_requests/').then(res => res.json()).then(data => {
+                    fetch('/api/requests/list/').then(res => res.json()).then(data => {
                         const listDiv = document.getElementById('req-list');
                         const badge = document.getElementById('req-count');
                         
-                        if (data.requests.length > 0) {
-                            badge.innerText = data.requests.length;
+                        const totalReqs = data.friend_requests.length + data.dating_requests.length;
+                        
+                        if (totalReqs > 0) {
+                            badge.innerText = totalReqs;
                             badge.style.display = 'flex';
                         } else {
                             badge.style.display = 'none';
                         }
 
-                        if(data.requests.length === 0) {
-                            listDiv.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>Hộp thư trống trơn.</div>";
+                        if(totalReqs === 0) {
+                            listDiv.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>Bạn chưa có thông báo nào.</div>";
                             return;
                         }
 
-                        listDiv.innerHTML = data.requests.map(req => `
-                            <div class="conv-item" style="background:#fff; border-radius:8px; margin-bottom:8px; border:1px solid #ffe4e1;">
-                                <img src="${req.avatar || 'https://via.placeholder.com/50'}" class="conv-avatar">
-                                <div class="conv-info">
-                                    <div class="conv-name">${req.name}</div>
-                                    <div style="margin-top:5px;">
-                                        <button onclick="respondRequest(${req.req_id}, 'accept')" style="background:#2ecc71; border:none; color:white; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;"><i class="fas fa-check"></i> Đồng ý</button>
-                                        <button onclick="respondRequest(${req.req_id}, 'reject')" style="background:#e74c3c; border:none; color:white; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold; margin-left:5px;"><i class="fas fa-times"></i> Xóa</button>
+                        let html = "";
+                        
+                        if(data.dating_requests.length > 0) {
+                            html += `<div style="font-size: 12px; font-weight: bold; color: #e91e63; margin: 10px 0 5px 0; padding-left: 5px;"><i class="fas fa-heartbeat"></i> LỜI TỎ TÌNH</div>`;
+                            html += data.dating_requests.map(req => `
+                                <div class="conv-item" style="background:#fff0f5; border-radius:8px; margin-bottom:8px; border:2px solid #ffb6c1;">
+                                    <img src="${req.avatar || 'https://via.placeholder.com/50'}" class="conv-avatar">
+                                    <div class="conv-info">
+                                        <div class="conv-name" style="color: #d81b60;">${req.name}</div>
+                                        <div style="font-size: 11px; color: #e91e63; font-style: italic; margin-bottom: 5px;">Muốn hẹn hò với bạn 💕</div>
+                                        <div>
+                                            <button onclick="respondDating(${req.sender_id}, 'accept')" style="background:linear-gradient(45deg, #ff4081, #f50057); border:none; color:white; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;"><i class="fas fa-heart"></i> Đồng ý</button>
+                                            <button onclick="respondDating(${req.sender_id}, 'reject')" style="background:#95a5a6; border:none; color:white; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold; margin-left:5px;"><i class="fas fa-times"></i> Từ chối</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `).join('');
+                            `).join('');
+                        }
+
+                        if(data.friend_requests.length > 0) {
+                            html += `<div style="font-size: 12px; font-weight: bold; color: #2ecc71; margin: 15px 0 5px 0; padding-left: 5px;"><i class="fas fa-user-friends"></i> LỜI MỜI KẾT BẠN</div>`;
+                            html += data.friend_requests.map(req => `
+                                <div class="conv-item" style="background:#fff; border-radius:8px; margin-bottom:8px; border:1px solid #ffe4e1;">
+                                    <img src="${req.avatar || 'https://via.placeholder.com/50'}" class="conv-avatar">
+                                    <div class="conv-info">
+                                        <div class="conv-name">${req.name}</div>
+                                        <div style="margin-top:5px;">
+                                            <button onclick="respondRequest(${req.req_id}, 'accept')" style="background:#2ecc71; border:none; color:white; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;"><i class="fas fa-check"></i> Đồng ý</button>
+                                            <button onclick="respondRequest(${req.req_id}, 'reject')" style="background:#e74c3c; border:none; color:white; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold; margin-left:5px;"><i class="fas fa-times"></i> Xóa</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+
+                        listDiv.innerHTML = html;
                     });
                 }
             };
 
             window.respondRequest = function(reqId, action) {
                 fetch(`/api/friend/${action}/${reqId}/`).then(res => res.json()).then(data => {
-                    toggleFriendRequests(); toggleFriendRequests(); // Refresh lại danh sách
+                    toggleRequests(); toggleRequests(); // Refresh lại danh sách
                     if(action === 'accept') {
                         alert("Chúc mừng! 2 bạn đã trở thành bạn bè 🎉");
-                        window.location.reload(); // Tải lại để cập nhật toàn bộ nút
+                        window.location.reload(); 
                     }
                 });
             };
 
+            window.respondDating = function(senderId, action) {
+                fetch(`/api/dating/${action}/${senderId}/`).then(res => res.json()).then(data => {
+                    toggleRequests(); toggleRequests(); // Refresh lại danh sách
+                    alert(data.message);
+                    if(action === 'accept') window.location.reload(); 
+                });
+            };
+
             // Gọi API kiểm tra số lượng yêu cầu lúc mới vào web
-            fetch('/api/friend/list_requests/').then(r=>r.json()).then(d=>{
-                if(d.requests && d.requests.length > 0) {
+            fetch('/api/requests/list/').then(r=>r.json()).then(d=>{
+                const total = (d.friend_requests ? d.friend_requests.length : 0) + (d.dating_requests ? d.dating_requests.length : 0);
+                if(total > 0) {
                     const badge = document.getElementById('req-count');
-                    badge.innerText = d.requests.length;
+                    badge.innerText = total;
                     badge.style.display = 'flex';
                 }
             });
@@ -763,6 +797,17 @@
             });
 
         } catch (e) { showError(e.message); }
+        function getCSRFToken() {
+    let cookieValue = null;
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith('csrftoken=')) {
+            cookieValue = cookie.substring('csrftoken='.length);
+        }
+    }
+    return cookieValue;
+}
     </script>
 </body>
 </html>
