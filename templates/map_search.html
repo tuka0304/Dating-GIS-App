@@ -3,306 +3,702 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Dating GIS App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dating GIS - Love Edition 💖</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* --- RESET CSS --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background: linear-gradient(135deg, #ffe4e1 0%, #ffb6c1 100%) !important;
+            color: #880e4f !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- HIỆU ỨNG TRÁI TIM BLING BLING --- */
+        .bling-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1; 
+            overflow: hidden;
+        }
+        .heart-bling {
+            position: absolute; bottom: -50px;
+            font-size: 20px; color: rgba(255, 105, 180, 0.5);
+            animation: floatUp 10s linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg) scale(0.5); opacity: 0; }
+            20% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) rotate(360deg) scale(1.2); opacity: 0; }
+        }
+        .h1 { left: 10%; animation-duration: 8s; animation-delay: 0s; }
+        .h2 { left: 30%; animation-duration: 12s; animation-delay: 2s; font-size: 25px; }
+        .h3 { left: 50%; animation-duration: 10s; animation-delay: 4s; }
+        .h4 { left: 70%; animation-duration: 9s; animation-delay: 1s; font-size: 18px; }
+        .h5 { left: 90%; animation-duration: 11s; animation-delay: 3s; }
+
+        /* --- ANIMATION NHỊP ĐẬP TRÁI TIM --- */
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.08); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.08); }
+            60% { transform: scale(1); }
+        }
+        .heartbeat-btn { animation: heartbeat 2s infinite; }
+
+        /* --- UI COMPONENTS CHUNG --- */
+        .top-corner-group {
+            position: fixed; top: 15px; right: 20px;
+            display: flex; gap: 15px; align-items: center; z-index: 9999;
+        }
+
+        .btn-bell {
+            background: #fff; border: 2px solid #ffb6c1; color: #d81b60;
+            width: 44px; height: 44px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 20px; cursor: pointer; position: relative;
+            box-shadow: 0 4px 10px rgba(233, 30, 99, 0.1); transition: 0.3s;
+        }
+        .btn-bell:hover { transform: scale(1.1); background: #fff0f5; }
+        .badge {
+            position: absolute; top: -5px; right: -5px; background: #e91e63;
+            color: white; font-size: 11px; font-weight: bold; width: 20px; height: 20px;
+            display: flex; justify-content: center; align-items: center; border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        .my-user-corner {
+            display: flex; align-items: center; background: rgba(255, 255, 255, 0.95);
+            padding: 6px 15px; border-radius: 30px; cursor: pointer;
+            border: 2px solid #ffb6c1; box-shadow: 0 4px 10px rgba(233, 30, 99, 0.1); transition: 0.3s;
+        }
+        .my-user-corner:hover { transform: scale(1.05); background: #fff0f5; }
+        .my-name-display { font-weight: bold; font-size: 13px; color: #d81b60; margin-right: 10px; }
+        .my-small-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #ff69b4; }
+
+        .filter-bar {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; background: rgba(255, 255, 255, 0.95);
+            padding: 8px 20px; border-radius: 50px; display: flex; gap: 10px; align-items: center;
+            border: 2px solid #ffb6c1; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.1);
+        }
+        .filter-bar select, .filter-bar input {
+            padding: 8px 15px; border-radius: 20px; border: 1px solid #ffc0cb;
+            background: #fff; color: #880e4f; outline: none; font-size: 13px;
+        }
+        .btn-search {
+            background: linear-gradient(45deg, #ff69b4, #d81b60); color: white; border: none; padding: 8px 20px;
+            border-radius: 25px; font-weight: bold; cursor: pointer;
+        }
+
+        /* --- APP LAYOUT --- */
+        .app-container { display: flex; height: 100vh; width: 100%; }
+
+        .left-panel {
+            width: 360px; background: #fffafa !important; padding: 80px 20px 20px 20px;
+            display: flex; flex-direction: column; align-items: center;
+            border-right: 3px solid #ffd1dc; z-index: 10; overflow-y: auto;
+            perspective: 1000px; overflow-x: hidden;
+        }
+        
+        #user-info-card { 
+            transform-origin: top center; transition: none; backface-visibility: hidden;
+            display: flex; flex-direction: column; align-items: center; width: 100%; flex: 1;
+        }
+
+        .avatar {
+            width: 140px; height: 140px; border-radius: 50%; object-fit: cover;
+            border: 4px solid #fff; box-shadow: 0 0 0 3px #ff69b4; margin-bottom: 10px;
+            flex-shrink: 0; /* Ngăn avatar bị bóp méo */
+        }
+        #p-name { color: #c2185b; font-size: 1.6em; margin: 5px 0; font-weight: 800; text-align: center;}
+        .status-text { color: #e91e63; font-style: italic; margin-bottom: 20px; font-size: 14px; text-align: center; }
+        
+        /* GOM NÚT NẰM NGANG */
+        .action-group {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; margin-bottom: 25px;
+        }
+        .btn-action {
+            flex: 1 1 45%; /* Chia đôi màn hình, tự động rớt dòng nếu hẹp */
+            padding: 10px; border-radius: 20px; border: none; font-weight: bold; color: white;
+            cursor: pointer; transition: 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.15); font-size: 13px;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
+        .btn-chat-color { background: linear-gradient(45deg, #a4508b, #5f0a87); }
+        .btn-date-color { background: linear-gradient(45deg, #ff4081, #f50057); }
+        .btn-friend-color { background: linear-gradient(45deg, #2ecc71, #27ae60); }
+
+        .nav-controls { display: flex; gap: 15px; margin-bottom: 15px; }
+        .nav-controls button {
+            background: white; border: 2px solid #ff69b4; color: #ff69b4;
+            padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;
+        }
+        .nav-controls button:hover { background: #fff0f5; }
+
+        .right-panel { flex: 1; display: flex; flex-direction: column; background: #fff0f5 !important; position: relative; }
+        .map-container { height: 45vh; width: 100%; position: relative; border-bottom: 3px solid #ffd1dc; }
+        #mini-map { width: 100%; height: 100%; z-index: 1; background: #eee; }
+
+        .profile-nav { display: flex; background: #fff; border-bottom: 2px solid #ffd1dc; }
+        .nav-btn { flex: 1; padding: 15px; border: none; background: transparent; color: #ad1457; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; }
+        .nav-btn.active { color: #d81b60; border-bottom: 3px solid #ff69b4; background: #fff0f5; }
+
+        .info-content { flex: 1; padding: 25px; overflow-y: auto; background: #fff0f5; }
+        .tab-content { display: none; color: #555; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        
+        .section-title { color: #c2185b; font-weight: bold; text-transform: uppercase; margin: 20px 0 10px 0; font-size: 13px; border-bottom: 1px dashed #ffb6c1; padding-bottom: 5px;}
+        .tag { background: #ffd1dc; color: #880e4f; padding: 5px 12px; border-radius: 15px; font-size: 12px; margin-right: 5px; display: inline-block; margin-bottom: 5px; }
+
+        /* --- NÚT HỘP THƯ --- */
+        .messenger-fab {
+            position: fixed; bottom: 20px; left: 20px; width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(45deg, #a4508b, #5f0a87); color: white; display: flex; justify-content: center; align-items: center;
+            font-size: 24px; cursor: pointer; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); z-index: 3000; transition: 0.2s;
+        }
+        .messenger-fab:hover { transform: scale(1.1); }
+
+        /* --- MODAL CHUNG --- */
+        .chat-box {
+            position: fixed; bottom: 90px; width: 350px; height: 500px;
+            background: #fffafa; border-radius: 15px; border: 2px solid #ffb6c1;
+            box-shadow: 0 5px 25px rgba(255, 182, 193, 0.4); display: flex; flex-direction: column; z-index: 2000; overflow: hidden;
+        }
+        .modal-header { background: linear-gradient(45deg, #ff69b4, #d81b60); padding: 15px; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        
+        #list-modal { left: 20px; display: none; }
+        #chat-modal { right: 20px; display: none; }
+        #req-modal { top: 70px; right: 20px; bottom: auto; height: auto; max-height: 400px; display: none; } /* Khung yêu cầu kết bạn */
+
+        .conv-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #ffd1dc; cursor: pointer; transition: 0.2s; color: #880e4f; }
+        .conv-item:hover { background: #fff0f5; }
+        .conv-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #ffb6c1; margin-right: 15px; }
+        .conv-info { flex: 1; overflow: hidden;}
+        .conv-name { font-weight: bold; color: #c2185b; font-size: 14px; }
+        .conv-preview { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        @keyframes tearExit { 0% { transform: rotateX(0deg); opacity: 1; } 100% { transform: rotateX(70deg) translateY(120%) rotateZ(-5deg); opacity: 0; } }
+        @keyframes tearEnter { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .tear-off-exit { animation: tearExit 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards; }
+        .tear-off-enter { animation: tearEnter 0.4s ease-out forwards; }
+    </style>
 </head>
 <body>
+    <div class="bling-container">
+        <div class="heart-bling h1">❤</div>
+        <div class="heart-bling h2">💖</div>
+        <div class="heart-bling h3">❤</div>
+        <div class="heart-bling h4">💕</div>
+        <div class="heart-bling h5">❤</div>
+    </div>
+
+    {{ results|json_script:"users-data" }}
+
+    <div class="top-corner-group">
+        <div class="btn-bell" onclick="toggleFriendRequests()">
+            <i class="fas fa-bell"></i>
+            <span class="badge" id="req-count" style="display: none;">0</span>
+        </div>
+
+        <div class="my-user-corner" onclick="window.location.href='{% url 'settings' %}'">
+            <span class="my-name-display">Hi, {{ my_profile.full_name }}</span>
+            {% if my_profile.avatar %}
+                <img src="{{ my_profile.avatar.url }}" class="my-small-avatar">
+            {% else %}
+                <img src="https://ui-avatars.com/api/?name={{ my_profile.full_name }}&background=F06292&color=fff" class="my-small-avatar">
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="messenger-fab" onclick="toggleConversationList()" title="Danh sách tin nhắn">
+        <i class="fas fa-comment-dots"></i>
+    </div>
 
     <form class="filter-bar" method="GET">
-        <select name="province" id="province-select" onchange="toggleRadius()" style="margin-right: 10px;">
+        <select name="province" id="province-select" onchange="toggleRadius()">
             <option value="ALL">Tất cả khu vực</option>
             {% for code, name in provinces %}
-                <option value="{{ code }}" {% if selected_province == code %}selected{% endif %}>
-                    {{ name }}
-                </option>
+                <option value="{{ code }}" {% if selected_province == code %}selected{% endif %}>{{ name }}</option>
             {% endfor %}
         </select>
-
         <select name="gender">
             <option value="ALL">Mọi giới tính</option>
             <option value="Nam" {% if selected_gender == 'Nam' %}selected{% endif %}>Nam</option>
             <option value="Nữ" {% if selected_gender == 'Nữ' %}selected{% endif %}>Nữ</option>
         </select>
-        
-        <input type="number" id="radius-input" name="radius" value="{{ radius }}" placeholder="Bán kính (km)" style="width: 100px;">
-        
-        <button type="submit" class="btn-search">Tìm kiếm</button>
+        <input type="number" id="radius-input" name="radius" value="{{ radius }}" placeholder="Bán kính (km)" style="width: 80px;">
+        <button type="submit" class="btn-search"><i class="fas fa-search"></i> Tìm</button>
     </form>
 
     <div class="app-container">
-        
         <div class="left-panel">
-            <img id="p-avatar" class="avatar" src="">
-            <h2 id="p-name">Loading...</h2>
-            <div class="sub-text" id="p-address">...</div>
+            <div id="user-info-card">
+                <img id="p-avatar" class="avatar" src="https://via.placeholder.com/150">
+                <h2 id="p-name">Loading...</h2>
+                <div id="p-status" class="status-text">...</div>
+                
+                <div class="action-group">
+                    <button class="btn-action btn-chat-color" onclick="openChat()"><i class="fas fa-paper-plane"></i> Nhắn tin</button>
+                    <button id="btn-friend" class="btn-action btn-friend-color" onclick="handleFriendAction()"><i class="fas fa-user-plus"></i> Kết bạn</button>
+                    <button class="btn-action btn-date-color heartbeat-btn" style="flex: 1 1 100%;" onclick="setDating()"><i class="fas fa-heart"></i> Xác nhận Hẹn hò</button>
+                </div>
 
-            <button class="btn-route" onclick="openChat()">💬 Nhắn tin</button>
+                <div class="nav-controls">
+                    <button onclick="prevUser()"><i class="fas fa-chevron-left"></i> Trước</button>
+                    <button onclick="nextUser()">Sau <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div id="js-error-msg" style="color: red; font-size: 12px; display: none; text-align: center; margin-top:10px;"></div>
             
-            <div class="second-photo-slot">
-                <img id="img-personal-spot" class="second-photo" src="https://via.placeholder.com/300x200?text=No+Image">
-                <div class="photo-label">Ảnh nổi bật</div>
-            </div>
-
-            <div class="nav-controls" style="display: flex; justify-content: center; gap: 15px; margin-top: 15px;">
-                <button onclick="prevUser()" style="background: #2b2d31; color: white; border: 1px solid #1e1f22; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    ⬅️ Trước
-                </button>
-                <button onclick="nextUser()" style="background: #2b2d31; color: white; border: 1px solid #1e1f22; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    Sau ➡️
-                </button>
-            </div>
-            
-            <div style="margin-top: 20px; text-align: center;">
-                <a href="{% url 'logout' %}" style="color: #f23f42; font-size: 12px; text-decoration: none;">[Đăng xuất]</a>
-            </div>
-
-            <div style="margin-top: 15px; text-align: center;">
-                <a href="{% url 'settings' %}" style="display: inline-block; background: #4e5058; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: bold; border: 1px solid #6d6f78;">
-                    ⚙️ Cài đặt hồ sơ
-                </a>
+            <div style="margin-top: auto; padding-top: 20px;">
+                <a href="{% url 'logout' %}" style="color: #ad1457; font-size: 12px; text-decoration: none;"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
             </div>
         </div>
 
         <div class="right-panel">
-            <div class="map-header-container">
+            <div class="map-container">
                 <div id="mini-map"></div>
             </div>
-            
             <div class="profile-nav">
-                <button class="nav-btn active" onclick="switchTab('info', this)">Thông tin</button>
-                <button class="nav-btn" onclick="switchTab('photos', this)">Ảnh</button>
-                <button class="nav-btn" onclick="switchTab('music', this)">Âm nhạc</button>
+                <button class="nav-btn active" onclick="switchTab('info', this)"><i class="fas fa-info-circle"></i> Thông tin</button>
+                <button class="nav-btn" onclick="switchTab('photos', this)"><i class="fas fa-images"></i> Thư viện</button>
+                <button class="nav-btn" onclick="switchTab('music', this)"><i class="fas fa-music"></i> Âm nhạc</button>
             </div>
-
             <div class="info-content">
                 <div id="tab-info" class="tab-content active">
-                    <div class="section-title">Giới thiệu</div>
-                    <p>📍 Cách bạn: <b id="p-dist" style="color: #5865f2">...</b> km</p>
-                    <p>🎂 Tuổi: <span id="p-age">...</span> • Giới tính: <span id="p-gender">...</span></p>
-                    <p style="color: #dbdee1; line-height: 1.5; font-style: italic;" id="p-bio">...</p>
+                    <div class="section-title">Thông tin cơ bản</div>
+                    <p style="margin-bottom:8px;"><i class="fas fa-map-marker-alt" style="color:#d81b60; width:20px;"></i> Cách bạn: <b id="p-dist" style="color: #5865f2">...</b> km</p>
+                    <p style="margin-bottom:8px;"><i class="fas fa-birthday-cake" style="color:#d81b60; width:20px;"></i> Tuổi: <b id="p-age">...</b> • Giới tính: <b id="p-gender">...</b></p>
+                    <p style="margin-bottom:8px;"><i class="fas fa-ring" style="color:#e91e63; width:20px;"></i> Tình trạng: <b id="p-marital" style="color: #e91e63;">...</b></p>
+                    
+                    <div class="section-title">Giới thiệu bản thân</div>
+                    <p style="color: #666; line-height: 1.6; font-style: italic; background: #fff; padding: 10px; border-radius: 8px; border-left: 3px solid #ffb6c1;" id="p-bio">...</p>
+                    
                     <div class="section-title">Sở thích</div>
                     <div id="p-hobbies"></div>
                 </div>
-
-                <div id="tab-photos" class="tab-content">
-                    <div class="section-title">Thư viện ảnh</div>
-                    <div class="photo-gallery">
-                        <div><p class="sub-text">Ảnh đại diện</p><img id="img-avatar-full" class="gallery-img" src=""></div>
-                        <div><p class="sub-text">Ảnh bìa / Nổi bật</p><img id="img-cover-full" class="gallery-img" src=""></div>
-                    </div>
-                </div>
-
-                <div id="tab-music" class="tab-content">
-                    <div class="section-title">Playlist Yêu Thích</div>
-                    <div id="p-playlist"></div>
-                </div>
+                <div id="tab-photos" class="tab-content"><div id="p-gallery-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;"></div></div>
+                <div id="tab-music" class="tab-content"><div id="p-playlist"></div></div>
             </div>
         </div>
     </div>
 
-    <div id="chat-modal" class="chat-box" style="display: none;">
-        <div class="chat-header">
-            <span id="chat-partner-name">Chat</span>
-            <button onclick="closeChat()" style="background:none; border:none; color:white; cursor:pointer;">✖</button>
+    <div id="list-modal" class="chat-box">
+        <div class="modal-header">
+            <span><i class="fas fa-envelope-open-text"></i> Hộp thư đến</span>
+            <span onclick="toggleConversationList()" style="cursor: pointer;"><i class="fas fa-times"></i></span>
         </div>
-        <div id="chat-history" class="chat-content">
+        <div id="conversation-list" style="flex: 1; overflow-y: auto;">
+            <div style="padding: 20px; text-align: center; color: #999;">Đang tải...</div>
+        </div>
+    </div>
+
+    <div id="chat-modal" class="chat-box">
+        <div class="modal-header">
+            <span id="chat-partner-name"><i class="fas fa-comment"></i> Chat</span>
+            <span onclick="closeChat()" style="cursor: pointer;"><i class="fas fa-times"></i></span>
+        </div>
+        <div id="chat-history" style="flex: 1; padding: 10px; overflow-y: auto;"></div>
+        <div style="padding: 10px; border-top: 1px solid #ffd1dc; display: flex; background: #fff;">
+            <input type="text" id="msg-input" onkeypress="handleEnter(event)" placeholder="Gửi yêu thương..." style="flex: 1; padding: 8px; border: 1px solid #ffb6c1; border-radius: 20px; color: #880e4f; outline:none;">
+            <button onclick="sendMessage()" style="margin-left: 8px; border: none; background: linear-gradient(45deg, #ff69b4, #d81b60); color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold;"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div id="req-modal" class="chat-box">
+        <div class="modal-header">
+            <span><i class="fas fa-user-friends"></i> Lời mời kết bạn</span>
+            <span onclick="toggleFriendRequests()" style="cursor: pointer;"><i class="fas fa-times"></i></span>
+        </div>
+        <div id="req-list" style="flex: 1; overflow-y: auto; padding: 10px;">
             </div>
-        <div class="chat-input-area">
-            <input type="text" id="msg-input" placeholder="Nhập tin nhắn..." onkeypress="handleEnter(event)">
-            <button onclick="sendMessage()">Gửi ➤</button>
-        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- DỮ LIỆU TỪ SERVER ---
-        const users = {{ results|safe }}; 
-        const myLat = {{ my_profile.latitude }};
-        const myLon = {{ my_profile.longitude }};
-        
-        let currentIndex = 0;
-        let map, routeLayer;
-        let chatInterval; 
-        let currentPartnerId = null;
+        const DA_NANG = { lat: 16.0544, lon: 108.2022 }; 
+        const NHA_TRANG = { lat: 12.2388, lon: 109.1967 };
 
-        // --- KHỞI TẠO MAP ---
-        function initMap() {
-            map = L.map('mini-map', {zoomControl: false}).setView([myLat, myLon], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            L.marker([myLat, myLon]).addTo(map).bindPopup("Bạn đang ở đây").openPopup();
-            L.control.zoom({position: 'bottomright'}).addTo(map);
+        function showError(msg) {
+            console.error(msg);
+            const errDiv = document.getElementById('js-error-msg');
+            errDiv.innerText = "Lỗi: " + msg;
+            errDiv.style.display = 'block';
         }
 
-        // --- HÀM 1: BẬT TẮT Ô BÁN KÍNH ---
-        function toggleRadius() {
-            const provinceSelect = document.getElementById('province-select');
-            const radiusInput = document.getElementById('radius-input');
+        try {
+            const users = JSON.parse(document.getElementById('users-data').textContent);
+            const myLat = parseFloat("{{ my_profile.latitude|default:'10.7769' }}");
+            const myLon = parseFloat("{{ my_profile.longitude|default:'106.7009' }}");
+            
+            let currentIndex = 0;
+            let map, routeLayer;
+            let currentPartnerId = null;
+            let currentRelStatus = 'none'; // Biến lưu trạng thái kết bạn hiện tại
+            let chatInterval;
 
-            if (provinceSelect.value !== 'ALL') {
-                // Nếu chọn Tỉnh -> Khóa ô Bán kính
-                radiusInput.disabled = true;
-                radiusInput.style.opacity = "0.5";
-                radiusInput.style.cursor = "not-allowed";
-                radiusInput.value = ""; 
-            } else {
-                // Nếu chọn Tất cả -> Mở ô Bán kính
-                radiusInput.disabled = false;
-                radiusInput.style.opacity = "1";
-                radiusInput.style.cursor = "text";
-                if(!radiusInput.value) radiusInput.value = 10;
+            function initMap() {
+                if(typeof L === 'undefined') throw new Error("Mất kết nối Map Library");
+                map = L.map('mini-map', {zoomControl: false}).setView([myLat, myLon], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                
+                const homeIcon = L.divIcon({html: '📍', className: '', iconSize: [24, 24]});
+                L.marker([myLat, myLon], {icon: homeIcon}).addTo(map).bindPopup("Bạn đang ở đây").openPopup();
+                L.control.zoom({position: 'bottomright'}).addTo(map);
             }
-        }
 
-        // --- HÀM 2: CHUYỂN TAB ---
-        function switchTab(tabName, btnElement) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
-            if(btnElement) btnElement.classList.add('active');
-        }
+            function renderUser(index) {
+                if(!users || users.length === 0) {
+                    document.getElementById('p-name').innerText = "Vũ trụ vắng lặng!";
+                    document.getElementById('p-status').innerText = "Hãy nới rộng khoảng cách để tìm kiếm nửa kia nhé!";
+                    return;
+                }
+                const u = users[index];
+                
+                if (!document.getElementById('chat-modal').style.display || document.getElementById('chat-modal').style.display === 'none') {
+                    currentPartnerId = u.id; 
+                }
 
-        // --- HÀM 3: HIỂN THỊ NGƯỜI DÙNG ---
-        function renderUser(index) {
-            if(users.length === 0) {
-                document.getElementById('p-name').innerText = "Không tìm thấy ai!";
-                return;
+                document.getElementById('p-name').innerText = u.name;
+                document.getElementById('p-status').innerText = u.status || "Đang online";
+                document.getElementById('p-age').innerText = u.age;
+                document.getElementById('p-gender').innerText = u.gender;
+                document.getElementById('p-dist').innerText = u.distance;
+                document.getElementById('p-marital').innerText = u.marital_status || "Bí mật";
+                document.getElementById('p-bio').innerText = u.bio || "Người này chưa cập nhật tiểu sử.";
+                
+                const avatarUrl = u.avatar ? u.avatar : `https://ui-avatars.com/api/?name=${u.name}&background=ff69b4&color=fff`;
+                document.getElementById('p-avatar').src = avatarUrl;
+
+                // --- XỬ LÝ NÚT KẾT BẠN (MÀU & CHỮ) ---
+                currentRelStatus = u.rel_status || 'none';
+                const btnFriend = document.getElementById('btn-friend');
+                if (currentRelStatus === 'friends') {
+                    btnFriend.innerHTML = '<i class="fas fa-user-check"></i> Bạn bè';
+                    btnFriend.style.background = '#4e5058';
+                } else if (currentRelStatus === 'pending_sent') {
+                    btnFriend.innerHTML = '<i class="fas fa-user-minus"></i> Gỡ lời mời';
+                    btnFriend.style.background = '#f23f42';
+                } else if (currentRelStatus === 'pending_received') {
+                    btnFriend.innerHTML = '<i class="fas fa-user-check"></i> Chấp nhận';
+                    btnFriend.style.background = '#f1c40f';
+                } else {
+                    btnFriend.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
+                    btnFriend.style.background = 'linear-gradient(45deg, #2ecc71, #27ae60)';
+                }
+                // -------------------------------------
+
+                const galleryDiv = document.getElementById('p-gallery-grid');
+                let html = `<img src="${avatarUrl}" style="width:100%; height:100px; object-fit:cover; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`;
+                if(u.gallery) u.gallery.forEach(img => html += `<img src="${img}" style="width:100%; height:100px; object-fit:cover; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`);
+                galleryDiv.innerHTML = html;
+
+                const musicDiv = document.getElementById('p-playlist');
+                if (u.playlist && u.playlist.length > 0) {
+                    musicDiv.innerHTML = u.playlist.map(item => {
+                        if (item.type === 'deezer') {
+                            return `<div style="margin-bottom: 10px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                        <iframe src="https://widget.deezer.com/widget/dark/track/${item.value}" width="100%" height="80" frameBorder="0" allowtransparency="true" allow="encrypted-media; clipboard-write"></iframe>
+                                    </div>`;
+                        } else {
+                            return `<div style="font-size:13px; color:#d81b60; margin:8px 0; background:#fff; padding:10px; border-radius:8px; border-left:3px solid #ff69b4;"><i class="fas fa-headphones-alt"></i> ${item.value}</div>`;
+                        }
+                    }).join('');
+                } else {
+                    musicDiv.innerHTML = '<div style="color:#999; font-size:13px; font-style:italic;">Người này chưa thêm nhạc vào playlist.</div>';
+                }
+
+                document.getElementById('p-hobbies').innerHTML = (u.hobbies && u.hobbies[0])
+                    ? u.hobbies.map(h => `<span class="tag"><i class="fas fa-hashtag" style="font-size:10px;"></i> ${h}</span>`).join('') : '<span style="color:#999; font-size:13px; font-style:italic;">Chưa cập nhật sở thích.</span>';
+
+                drawVietnamRoute(u.lat, u.lon);
             }
-            const u = users[index];
 
-            // Cập nhật biến toàn cục để Chat biết đang chat với ai
-            currentPartnerId = u.id; 
-
-            // Điền thông tin text
-            document.getElementById('p-name').innerText = u.name;
-            document.getElementById('p-address').innerText = u.address;
-            document.getElementById('p-age').innerText = u.age;
-            document.getElementById('p-gender').innerText = u.gender;
-            document.getElementById('p-dist').innerText = u.distance;
-            document.getElementById('p-bio').innerText = u.bio || "Chưa có giới thiệu.";
-
-            // Ảnh
-            const avatarUrl = u.avatar || 'https://via.placeholder.com/150';
-            const coverUrl = u.cover || 'https://via.placeholder.com/300x200?text=No+Cover'; 
-
-            document.getElementById('p-avatar').src = avatarUrl;
-            document.getElementById('img-avatar-full').src = avatarUrl;
-            document.getElementById('img-personal-spot').src = coverUrl;
-            document.getElementById('img-cover-full').src = coverUrl;
-
-            // Sở thích
-            const hobbyDiv = document.getElementById('p-hobbies');
-            hobbyDiv.innerHTML = u.hobbies.map(h => `<span class="tag">${h}</span>`).join('');
-            
-            // Nhạc
-            const musicDiv = document.getElementById('p-playlist');
-            musicDiv.innerHTML = u.playlist.map(s => `
-                <div style="background:#2b2d31; padding:10px; margin:5px 0; border-radius:5px; display:flex; align-items:center; gap:10px;">
-                    <i class="fas fa-music" style="color:#1db954"></i><span>${s}</span>
-                </div>`).join('');
-
-            // Vẽ đường đi
-            findRoute(u.lat, u.lon);
-        }
-
-        // --- HÀM 4: VẼ ĐƯỜNG (OSRM) ---
-        function findRoute(targetLat, targetLon) {
-            if(routeLayer) map.removeLayer(routeLayer);
-            
-            // Nếu khoảng cách quá xa (>50km) hoặc là 0km thì không vẽ để đỡ rối
-            if(targetLat === myLat && targetLon === myLon) return;
-
-            fetch(`https://router.project-osrm.org/route/v1/driving/${myLon},${myLat};${targetLon},${targetLat}?overview=full&geometries=geojson`)
-                .then(res => res.json())
-                .then(data => {
-                    if(data.routes && data.routes.length > 0) {
-                        routeLayer = L.geoJSON(data.routes[0].geometry, {color: '#5865f2', weight: 5}).addTo(map);
-                        map.fitBounds(routeLayer.getBounds(), {padding: [20, 20]});
-                    }
-                })
-                .catch(err => console.log("Lỗi vẽ đường:", err));
-        }
-
-        // --- HÀM 5: CHUYỂN NGƯỜI (NEXT/PREV) ---
-        function nextUser() {
-            if(users.length === 0) return;
-            currentIndex = (currentIndex + 1) % users.length;
-            renderUser(currentIndex);
-        }
-        function prevUser() {
-            if(users.length === 0) return;
-            currentIndex = (currentIndex - 1 + users.length) % users.length;
-            renderUser(currentIndex);
-        }
-
-        // --- HÀM 6: CHỨC NĂNG CHAT ---
-        function openChat() {
-            if(!currentPartnerId) { alert("Không tìm thấy ID người dùng!"); return; }
-            document.getElementById('chat-modal').style.display = 'flex';
-            document.getElementById('chat-partner-name').innerText = "Chat với " + users[currentIndex].name;
-            
-            loadMessages();
-            if(chatInterval) clearInterval(chatInterval);
-            chatInterval = setInterval(loadMessages, 2000); // Auto load 2s/lần
-        }
-
-        function closeChat() {
-            document.getElementById('chat-modal').style.display = 'none';
-            if(chatInterval) clearInterval(chatInterval);
-        }
-
-        function loadMessages() {
-            if(!currentPartnerId) return;
-            fetch(`/api/chat/history/${currentPartnerId}/`)
-                .then(res => res.json())
-                .then(data => {
-                    const chatDiv = document.getElementById('chat-history');
-                    chatDiv.innerHTML = ""; 
-                    data.messages.forEach(m => {
-                        chatDiv.innerHTML += `<div class="msg ${m.sender}">${m.content}</div>`;
+            // --- CÁC HÀM XỬ LÝ NÚT BẤM (KẾT BẠN / HẸN HÒ) ---
+            window.handleFriendAction = function() {
+                if(!currentPartnerId) return;
+                
+                if (currentRelStatus === 'none') {
+                    fetch(`/api/friend/send/${currentPartnerId}/`).then(res => res.json()).then(data => {
+                        if(data.status === 'ok') {
+                            currentRelStatus = 'pending_sent';
+                            const btn = document.getElementById('btn-friend');
+                            btn.innerHTML = '<i class="fas fa-user-minus"></i> Gỡ lời mời';
+                            btn.style.background = '#f23f42';
+                        }
                     });
-                    chatDiv.scrollTop = chatDiv.scrollHeight;
-                });
-        }
+                } 
+                else if (currentRelStatus === 'pending_sent') {
+                    fetch(`/api/friend/cancel/${currentPartnerId}/`).then(res => res.json()).then(data => {
+                        if(data.status === 'ok') {
+                            currentRelStatus = 'none';
+                            const btn = document.getElementById('btn-friend');
+                            btn.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
+                            btn.style.background = 'linear-gradient(45deg, #2ecc71, #27ae60)';
+                        }
+                    });
+                }
+                else if (currentRelStatus === 'friends') {
+                    alert("Hai bạn đã là bạn bè rồi! Nhắn tin cho nhau đi nào 💕");
+                }
+            };
 
-        function sendMessage() {
-            const input = document.getElementById('msg-input');
-            const content = input.value;
-            if(!content) return;
-            
-            fetch('/api/chat/send/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    receiver_id: currentPartnerId,
-                    content: content
-                })
-            }).then(res => res.json()).then(data => {
-                if(data.status === 'ok') {
-                    input.value = ""; 
-                    loadMessages(); 
+            window.setDating = function() {
+                if(!currentPartnerId) return;
+                if(confirm("Bạn có chắc chắn muốn xác nhận hẹn hò với người này không? Trái tim chỉ có một ngăn thôi nhé! ❤️")) {
+                    fetch(`/api/dating/set/${currentPartnerId}/`).then(res => res.json()).then(data => {
+                        alert(data.message);
+                    });
+                }
+            };
+
+            // --- XỬ LÝ CHUÔNG THÔNG BÁO KẾT BẠN ---
+            window.toggleFriendRequests = function() {
+                const modal = document.getElementById('req-modal');
+                if (modal.style.display === 'flex') {
+                    modal.style.display = 'none';
+                } else {
+                    modal.style.display = 'flex';
+                    fetch('/api/friend/list_requests/').then(res => res.json()).then(data => {
+                        const listDiv = document.getElementById('req-list');
+                        const badge = document.getElementById('req-count');
+                        
+                        if (data.requests.length > 0) {
+                            badge.innerText = data.requests.length;
+                            badge.style.display = 'flex';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+
+                        if(data.requests.length === 0) {
+                            listDiv.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>Hộp thư trống trơn.</div>";
+                            return;
+                        }
+
+                        listDiv.innerHTML = data.requests.map(req => `
+                            <div class="conv-item" style="background:#fff; border-radius:8px; margin-bottom:8px; border:1px solid #ffe4e1;">
+                                <img src="${req.avatar || 'https://via.placeholder.com/50'}" class="conv-avatar">
+                                <div class="conv-info">
+                                    <div class="conv-name">${req.name}</div>
+                                    <div style="margin-top:5px;">
+                                        <button onclick="respondRequest(${req.req_id}, 'accept')" style="background:#2ecc71; border:none; color:white; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;"><i class="fas fa-check"></i> Đồng ý</button>
+                                        <button onclick="respondRequest(${req.req_id}, 'reject')" style="background:#e74c3c; border:none; color:white; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold; margin-left:5px;"><i class="fas fa-times"></i> Xóa</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    });
+                }
+            };
+
+            window.respondRequest = function(reqId, action) {
+                fetch(`/api/friend/${action}/${reqId}/`).then(res => res.json()).then(data => {
+                    toggleFriendRequests(); toggleFriendRequests(); // Refresh lại danh sách
+                    if(action === 'accept') alert("Chúc mừng! 2 bạn đã trở thành bạn bè 🎉");
+                });
+            };
+
+            // Gọi API kiểm tra số lượng yêu cầu lúc mới vào web
+            fetch('/api/friend/list_requests/').then(r=>r.json()).then(d=>{
+                if(d.requests && d.requests.length > 0) {
+                    const badge = document.getElementById('req-count');
+                    badge.innerText = d.requests.length;
+                    badge.style.display = 'flex';
                 }
             });
-        }
 
-        function handleEnter(e) {
-            if(e.key === 'Enter') sendMessage();
-        }
+            function drawVietnamRoute(targetLat, targetLon) {
+                if(!map) return;
+                if(routeLayer) map.removeLayer(routeLayer);
+                if(targetLat === myLat && targetLon === myLon) return;
 
-        // --- KHỞI CHẠY ---
-        document.addEventListener("DOMContentLoaded", () => {
-            initMap();
-            toggleRadius(); // Gọi ngay để check trạng thái ban đầu
-            renderUser(0);
-        });
+                let waypoints = [];
+                waypoints.push([myLon, myLat]);
+                const minLat = Math.min(myLat, targetLat);
+                const maxLat = Math.max(myLat, targetLat);
 
-        // Hỗ trợ phím mũi tên
-        document.addEventListener('keydown', (e) => {
-            if (e.key === "ArrowRight") nextUser();
-            if (e.key === "ArrowLeft") prevUser();
-        });
+                if (minLat < NHA_TRANG.lat && maxLat > (NHA_TRANG.lat + 0.5)) {
+                    if (myLat < targetLat) { waypoints.push([NHA_TRANG.lon, NHA_TRANG.lat]); } 
+                }
+                if (minLat < DA_NANG.lat && maxLat > (DA_NANG.lat + 0.5)) {
+                     if (myLat < targetLat) waypoints.push([DA_NANG.lon, DA_NANG.lat]);
+                }
+                if (myLat > targetLat) {
+                    if (minLat < DA_NANG.lat && maxLat > (DA_NANG.lat + 0.5)) waypoints.push([DA_NANG.lon, DA_NANG.lat]);
+                    if (minLat < NHA_TRANG.lat && maxLat > (NHA_TRANG.lat + 0.5)) waypoints.push([NHA_TRANG.lon, NHA_TRANG.lat]);
+                }
 
+                waypoints.push([targetLon, targetLat]);
+                const coordsString = waypoints.map(p => p.join(',')).join(';');
+                const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
+
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.routes && data.routes.length > 0) {
+                            routeLayer = L.geoJSON(data.routes[0].geometry, {
+                                color: '#e91e63', weight: 5, opacity: 0.9, lineCap: 'round'
+                            }).addTo(map);
+                            map.fitBounds(routeLayer.getBounds(), {padding: [50, 50]});
+                        } else {
+                            drawBackupLine(waypoints);
+                        }
+                    })
+                    .catch(err => { console.error(err); drawBackupLine(waypoints); });
+            }
+
+            function drawBackupLine(pointsArray) {
+                const latLngs = pointsArray.map(p => [p[1], p[0]]);
+                routeLayer = L.polyline(latLngs, { color: '#e91e63', weight: 4, dashArray: '5, 10' }).addTo(map);
+                map.fitBounds(routeLayer.getBounds(), {padding: [50,50]});
+            }
+
+            // CONTROLS & ANIMATION
+            function animateTransition(callback) {
+                const card = document.getElementById('user-info-card');
+                card.classList.remove('tear-off-enter'); 
+                card.classList.add('tear-off-exit');
+                setTimeout(() => {
+                    callback();
+                    card.classList.remove('tear-off-exit');
+                    card.classList.add('tear-off-enter');
+                }, 500); 
+            }
+
+            window.nextUser = function() { 
+                if(users.length === 0) return;
+                animateTransition(() => {
+                    currentIndex = (currentIndex + 1) % users.length; 
+                    renderUser(currentIndex); 
+                });
+            };
+
+            window.prevUser = function() { 
+                if(users.length === 0) return;
+                animateTransition(() => {
+                    currentIndex = (currentIndex - 1 + users.length) % users.length; 
+                    renderUser(currentIndex); 
+                });
+            };
+            
+            window.switchTab = function(id, btn) {
+                document.querySelectorAll('.tab-content').forEach(e => e.style.display = 'none');
+                document.getElementById('tab-'+id).style.display = 'block';
+                document.querySelectorAll('.nav-btn').forEach(e => e.style.borderBottom = '3px solid transparent');
+                btn.style.borderBottom = '3px solid #ff69b4';
+            };
+            window.toggleRadius = function() {
+                const val = document.getElementById('province-select').value;
+                document.getElementById('radius-input').disabled = (val !== 'ALL');
+            };
+
+            // CHAT SYSTEM
+            window.openChat = function(partnerId = null, partnerName = null) {
+                if (partnerId) {
+                    currentPartnerId = partnerId;
+                    document.getElementById('chat-partner-name').innerHTML = `<i class="fas fa-heart" style="color:#ffb6c1"></i> ${partnerName}`;
+                } else {
+                    currentPartnerId = users[currentIndex].id;
+                    document.getElementById('chat-partner-name').innerHTML = `<i class="fas fa-heart" style="color:#ffb6c1"></i> ${users[currentIndex].name}`;
+                }
+
+                document.getElementById('chat-modal').style.display = 'flex';
+                document.getElementById('list-modal').style.display = 'none';
+                
+                loadMessages();
+                if(chatInterval) clearInterval(chatInterval);
+                chatInterval = setInterval(loadMessages, 3000);
+            };
+
+            window.closeChat = function() { 
+                document.getElementById('chat-modal').style.display = 'none'; 
+                clearInterval(chatInterval); 
+            };
+
+            window.toggleConversationList = function() {
+                const listModal = document.getElementById('list-modal');
+                if (listModal.style.display === 'flex') {
+                    listModal.style.display = 'none';
+                } else {
+                    listModal.style.display = 'flex';
+                    fetchConversations();
+                }
+            };
+
+            function fetchConversations() {
+                fetch('/api/chat/list/')
+                    .then(res => res.json())
+                    .then(data => {
+                        const listDiv = document.getElementById('conversation-list');
+                        if (data.conversations.length === 0) {
+                            listDiv.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Chưa có tin nhắn nào. Mở lời đi nào! 💌</div>';
+                            return;
+                        }
+                        
+                        listDiv.innerHTML = data.conversations.map(c => {
+                            const avatar = c.avatar || `https://ui-avatars.com/api/?name=${c.name}&background=random`;
+                            return `
+                                <div class="conv-item" onclick="openChat(${c.partner_id}, '${c.name}')">
+                                    <img src="${avatar}" class="conv-avatar">
+                                    <div class="conv-info">
+                                        <div class="conv-name">${c.name}</div>
+                                        <div class="conv-preview">${c.is_me ? 'Bạn: ' : ''}${c.last_msg}</div>
+                                    </div>
+                                    <div style="font-size: 11px; color: #ff69b4; text-align:right;">${c.time}</div>
+                                </div>
+                            `;
+                        }).join('');
+                    });
+            }
+            
+            function loadMessages() {
+                if(!currentPartnerId) return;
+                fetch(`/api/chat/history/${currentPartnerId}/`).then(r=>r.json()).then(d=>{
+                    const div = document.getElementById('chat-history');
+                    div.innerHTML = d.messages.map(m => `
+                        <div style="padding: 10px 15px; margin: 8px 0; border-radius: 18px; max-width: 80%; font-size: 14px; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                            ${m.sender==='me' ? 'background: linear-gradient(45deg, #ff69b4, #d81b60); color:white; margin-left:auto; border-bottom-right-radius:4px;' : 'background:#fff; color:#880e4f; margin-right:auto; border-bottom-left-radius:4px; border: 1px solid #ffe4e1;'}">
+                            <span>${m.content}</span>
+                            <span style="font-size: 10px; margin-top: 5px; opacity: 0.8; text-align: right;">${m.time}</span>
+                        </div>
+                    `).join('');
+                    div.scrollTop = div.scrollHeight;
+                });
+            }
+
+            window.sendMessage = function() {
+                const txt = document.getElementById('msg-input');
+                if(!txt.value) return;
+                fetch('/api/chat/send/', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({receiver_id: currentPartnerId, content: txt.value})
+                }).then(r=>r.json()).then(d=>{ if(d.status==='ok'){ txt.value=''; loadMessages(); fetchConversations(); }});
+            }
+            window.handleEnter = function(e) { if(e.key==='Enter') sendMessage(); };
+
+            document.addEventListener("DOMContentLoaded", () => {
+                initMap();
+                toggleRadius();
+                renderUser(0);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === "ArrowRight") nextUser();
+                if (e.key === "ArrowLeft") prevUser();
+            });
+
+        } catch (e) { showError(e.message); }
     </script>
 </body>
 </html>

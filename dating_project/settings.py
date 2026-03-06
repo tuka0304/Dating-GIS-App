@@ -73,10 +73,16 @@ WSGI_APPLICATION = 'dating_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# dating_project/settings.py
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'dating_db',       # Tên DB bạn vừa tạo ở Bước 1
+        'USER': 'postgres',        # Tên đăng nhập mặc định
+        'PASSWORD': '123', # ⚠️ Thay mật khẩu bạn đã đặt lúc cài Postgres vào đây
+        'HOST': 'localhost',       # Chạy trên máy cá nhân
+        'PORT': '5432',            # Cổng mặc định của Postgres
     }
 }
 
@@ -103,9 +109,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'vi'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
 
 USE_I18N = True
 

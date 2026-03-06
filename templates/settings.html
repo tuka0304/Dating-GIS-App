@@ -4,100 +4,162 @@
 <head>
     <meta charset="UTF-8">
     <title>Cài đặt hồ sơ</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #313338; color: #dbdee1; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: #2b2d31; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        h2 { color: #f2f3f5; border-bottom: 2px solid #1e1f22; padding-bottom: 10px; margin-top: 0; }
-        
-        /* Form Style */
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #b5bac1; }
-        .form-input { 
-            width: 100%; padding: 10px; background: #1e1f22; border: 1px solid #1e1f22; 
-            color: white; border-radius: 4px; box-sizing: border-box; font-family: inherit;
+        /* ... (Giữ nguyên CSS cũ của bạn) ... */
+        body {
+            background: linear-gradient(135deg, #ffe4e1 0%, #ffc0cb 100%);
+            color: #880e4f;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; padding: 20px;
         }
-        .form-input:focus { outline: none; border-color: #5865f2; }
-        
-        /* Grid Layout cho đẹp */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        
-        /* Buttons */
-        .btn-save { 
-            background: #248046; color: white; border: none; padding: 12px 25px; 
-            border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px; 
+        .container {
+            background: #fffafa; padding: 30px; border-radius: 15px; width: 500px;
+            box-shadow: 0 5px 25px rgba(255, 105, 180, 0.2); border: 2px solid #ffb6c1;
         }
-        .btn-cancel { 
-            background: #da373c; color: white; text-decoration: none; padding: 12px 25px; 
-            border-radius: 4px; font-weight: bold; font-size: 16px; margin-left: 10px;
+        h2 { color: #c2185b; text-align: center; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #c2185b; }
+        
+        /* Class này khớp với 'class': 'form-input' trong forms.py */
+        .form-input, input[type="text"], input[type="file"], select, textarea {
+            width: 100%; padding: 12px; border-radius: 8px;
+            border: 1px solid #ffc0cb; background: #fff; color: #880e4f;
+            box-sizing: border-box; transition: 0.3s;
+        }
+        .form-input:focus { outline: none; border-color: #ff69b4; box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1); }
+
+        button[type="submit"] {
+            width: 100%; padding: 12px; border: none; border-radius: 25px;
+            background: linear-gradient(45deg, #ff69b4, #d81b60);
+            color: white; font-weight: bold; cursor: pointer; margin-top: 15px;
         }
         
-        /* Upload Image Preview Styling */
-        input[type="file"] { background: #111214; padding: 10px; width: 100%; }
-        .help-text { font-size: 12px; color: #949ba4; margin-top: 2px; }
+        .error-list { color: red; font-size: 12px; margin-top: 5px; }
+        
+        /* GPS Styles */
+        .gps-box { background: #fff0f5; padding: 15px; border-radius: 10px; border: 1px dashed #ffb6c1; }
+        .btn-geo { background: #fff; border: 1px solid #ff69b4; color: #ff69b4; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
+        a { color: #c2185b; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>✏️ Chỉnh sửa hồ sơ cá nhân</h2>
+        <h2>✏️ Chỉnh sửa hồ sơ</h2>
+        
+        {% if form.errors %}
+            <div style="background: #ffebee; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ef5350;">
+                <strong style="color: #c62828;">⚠️ Có lỗi xảy ra:</strong>
+                <ul style="margin: 5px 0 0 20px; color: #c62828; font-size: 13px;">
+                    {% for field, errors in form.errors.items %}
+                        <li>{{ field }}: {{ errors|striptags }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
         
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>Họ và tên:</label> {{ form.full_name }}
+            <div class="form-group">
+                <label>Họ và tên:</label>
+                {{ form.full_name }}
+            </div>
+            
+            <div class="form-group" style="display: flex; gap: 15px;">
+                <div style="flex: 1;">
+                    <label>Ngày sinh:</label>
+                    {{ form.birth_date }}
                 </div>
-                <div class="form-group">
-                    <label>Ngày sinh:</label> {{ form.birth_date }}
+                <div style="flex: 1;">
+                    <label>Giới tính:</label>
+                    {{ form.gender }}
                 </div>
             </div>
+<div class="form-group"><label>Tình trạng quan hệ:</label> {{ form.marital_status }}</div>
+            <div class="form-group">
+                <label>Khu vực sinh sống:</label>
+                {{ form.province }}
+            </div>
 
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>Giới tính:</label> {{ form.gender }}
+            <div class="form-group">
+                <label>Địa chỉ chi tiết:</label>
+                {{ form.address }}
+            </div>
+
+            <div class="form-group gps-box">
+                <label style="color: #c2185b;">📍 Vị trí:</label>
+                <div style="margin-bottom: 10px;">
+                    <button type="button" class="btn-geo" onclick="getLocation()">
+                        <i class="fas fa-location-arrow"></i> Lấy vị trí hiện tại
+                    </button>
+                    <span id="geo-msg" style="font-size:13px; margin-left:10px;"></span>
                 </div>
-                <div class="form-group">
-                    <label>Khu vực sinh sống:</label> {{ form.province }}
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex:1">
+                        <label style="font-size: 12px;">Vĩ độ:</label>
+                        {{ form.latitude }} </div>
+                    <div style="flex:1">
+                        <label style="font-size: 12px;">Kinh độ:</label>
+                        {{ form.longitude }} </div>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Địa chỉ chi tiết (Hiện trên map):</label> {{ form.address }}
+                <label>📷 Ảnh đại diện:</label>
+                {{ form.avatar }}
             </div>
-
-            <hr style="border: 0; border-top: 1px solid #3f4147; margin: 20px 0;">
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>📸 Ảnh đại diện (Avatar):</label>
-                    {{ form.avatar }}
-                </div>
-                <div class="form-group">
-                    <label>🖼️ Ảnh nổi bật (Hiển thị trang chủ):</label>
-                    {{ form.cover_photo }}
-                </div>
+            <div class="form-group">
+                <label>🖼️ Ảnh bìa:</label>
+                {{ form.cover_photo }}
             </div>
 
             <div class="form-group">
-                <label>📝 Status / Bio (Giới thiệu bản thân):</label>
+                <label>📝 Giới thiệu (Bio):</label>
                 {{ form.bio }}
             </div>
 
             <div class="form-group">
-                <label>⚽ Sở thích:</label>
+                <label>🎯 Sở thích (Hobbies):</label>
                 {{ form.hobbies }}
             </div>
 
             <div class="form-group">
-                <label>🎵 Bài hát yêu thích (Mỗi dòng 1 bài):</label>
+                <label>🎵 Bài hát yêu thích (Deezer):</label>
                 {{ form.music_playlist }}
+                <small style="display:block; margin-top:5px; color:#888; font-size:12px;">
+                    * Ví dụ: "Nơi này có anh Sơn Tùng"
+                </small>
             </div>
 
-            <div style="margin-top: 30px; text-align: right;">
-                <button type="submit" class="btn-save">Lưu thay đổi</button>
-                <a href="{% url 'home' %}" class="btn-cancel">Hủy</a>
+            <button type="submit">💖 Lưu thay đổi</button>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="{% url 'home' %}">Quay lại trang chủ</a>
             </div>
         </form>
     </div>
+
+    <script>
+        function getLocation() {
+            const status = document.getElementById('geo-msg');
+            // Vì dùng {{ form.latitude }}, ID mặc định của Django là id_latitude
+            const latInput = document.getElementById('id_latitude');
+            const lonInput = document.getElementById('id_longitude');
+
+            status.innerHTML = '⏳ Đang tìm...';
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (p) => {
+                        latInput.value = p.coords.latitude;
+                        lonInput.value = p.coords.longitude;
+                        status.innerHTML = '✅ Đã tìm thấy!';
+                        status.style.color = 'green';
+                    },
+                    () => { status.innerHTML = '❌ Lỗi vị trí'; status.style.color = 'red'; }
+                );
+            }
+        }
+    </script>
 </body>
 </html>
