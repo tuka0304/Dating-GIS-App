@@ -12,24 +12,22 @@ from django.db.models import Q
 from django.utils import timezone 
 from geopy.geocoders import Nominatim
 
-from .models import UserProfile, Message, PROVINCE_CHOICES, FriendRequest
+# BỔ SUNG THÊM DatingRequest VÀO ĐÂY
+from .models import UserProfile, Message, PROVINCE_CHOICES, FriendRequest, DatingRequest
 from .gis_tools import DatingGISTool
 from .forms import RegisterForm, ProfileUpdateForm
 
 # ==========================================
-# 1. HÀM HỖ TRỢ TÌM NHẠC TRÊN DEEZER
+# 1. HÀM LẤY MÁY PHÁT NHẠC SOUNDCLOUD (OEMBED)
 # ==========================================
-def get_deezer_track_id(song_name):
+def get_soundcloud_embed(track_url):
     try:
-        url = "https://api.deezer.com/search"
-        params = {'q': song_name, 'limit': 1}
-        response = requests.get(url, params=params, timeout=5)
-        data = response.json()
-        
-        if 'data' in data and len(data['data']) > 0:
-            return data['data'][0]['id']
+        url = f"https://soundcloud.com/oembed?format=json&url={track_url}&maxheight=166"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return response.json().get('html')
     except Exception as e:
-        print(f"Lỗi Deezer: {e}")
+        print(f"Lỗi SoundCloud: {e}")
     return None
 
 # ==========================================
@@ -49,7 +47,6 @@ def map_search_view(request):
 
     my_location = (my_profile.latitude, my_profile.longitude)
 
-    # --- Xử lý tham số tìm kiếm ---
     raw_radius = request.GET.get('radius', '')
     if raw_radius and raw_radius.strip():
         try:
@@ -65,7 +62,6 @@ def map_search_view(request):
     gender_filter = request.GET.get('gender', 'ALL')
     province_filter = request.GET.get('province', 'ALL')
 
-    # --- Lọc danh sách ứng viên ---
     candidates = UserProfile.objects.exclude(id=my_profile.id)
     if gender_filter != 'ALL':
         candidates = candidates.filter(gender=gender_filter)
@@ -76,18 +72,16 @@ def map_search_view(request):
     else:
         final_calc_radius = search_radius
 
-    # --- Tính toán GIS ---
     nearby_users = DatingGISTool.find_users_in_radius(my_location, candidates, final_calc_radius)
     random.shuffle(nearby_users)
 
-    # --- Đóng gói JSON ---
     results_json = []
     song_cache = {} 
 
     for u in nearby_users:
         gallery_images = [p.image.url for p in u.gallery.all()] if hasattr(u, 'gallery') else []
         
-        # --- THÊM ĐOẠN LOGIC KIỂM TRA TRẠNG THÁI NÀY ---
+        # --- KIỂM TRA TRẠNG THÁI KẾT BẠN ---
         rel_status = 'none'
         if request.user.profile.friends.filter(id=u.id).exists():
             rel_status = 'friends'
@@ -95,20 +89,37 @@ def map_search_view(request):
             rel_status = 'pending_sent'
         elif FriendRequest.objects.filter(sender=u.user, receiver=request.user, status='pending').exists():
             rel_status = 'pending_received'
+
+        # --- KIỂM TRA TRẠNG THÁI HẸN HÒ ---
+        dating_rel_status = 'none'
+        if request.user.profile.dating_with == u:
+            dating_rel_status = 'dating'
+        elif DatingRequest.objects.filter(sender=request.user, receiver=u.user, status='pending').exists():
+            dating_rel_status = 'pending_sent'
+        elif DatingRequest.objects.filter(sender=u.user, receiver=request.user, status='pending').exists():
+            dating_rel_status = 'pending_received'
+
+        # --- ĐÁNH DẤU CHỦ QUYỀN (@TÊN) ---
+        display_marital = u.marital_status
+        if u.dating_with:
+            display_marital = f"Đang hẹn hò với @{u.dating_with.full_name} 💍"
         
-        # Xử lý Playlist nhạc
+        # Xử lý Playlist nhạc SoundCloud
         processed_playlist = []
         if u.music_playlist:
             song_lines = [s.strip() for s in u.music_playlist.split('\n') if s.strip()]
             for song in song_lines:
-                if song in song_cache:
-                    track_id = song_cache[song]
-                else:
-                    track_id = get_deezer_track_id(song)
-                    song_cache[song] = track_id
-                
-                if track_id:
-                    processed_playlist.append({'type': 'deezer', 'value': track_id})
+                if 'soundcloud.com' in song:
+                    if song in song_cache:
+                        iframe_html = song_cache[song]
+                    else:
+                        iframe_html = get_soundcloud_embed(song)
+                        song_cache[song] = iframe_html
+                    
+                    if iframe_html:
+                        processed_playlist.append({'type': 'soundcloud', 'value': iframe_html})
+                    else:
+                        processed_playlist.append({'type': 'text', 'value': song})
                 else:
                     processed_playlist.append({'type': 'text', 'value': song})
         
@@ -117,7 +128,9 @@ def map_search_view(request):
             'name': u.full_name,
             'gender': u.gender,
             'age': u.get_age(),
-            'marital_status': u.marital_status,
+            'marital_status': display_marital, # <-- Đã cập nhật dòng này
+            'rel_status': rel_status,
+            'dating_rel_status': dating_rel_status, # <-- Đã thêm dòng này
             'status': u.bio[:30] + '...' if u.bio else 'Đang online',
             'address': u.address,
             'lat': u.latitude,
@@ -267,7 +280,6 @@ def settings_view(request):
         if form.is_valid():
             user_profile = form.save(commit=False)
             
-            # ƯU TIÊN 1: Lấy tọa độ chính xác từ GPS trình duyệt (nếu có)
             raw_lat = request.POST.get('latitude')
             raw_lon = request.POST.get('longitude')
             gps_success = False
@@ -280,7 +292,6 @@ def settings_view(request):
                 except ValueError:
                     pass
             
-            # ƯU TIÊN 2: Nếu không bấm GPS, tự động tìm bằng Geopy (Đã khoá VN)
             if not gps_success:
                 address_string = f"{user_profile.address}, {user_profile.get_province_display()}, Việt Nam"
                 try:
@@ -291,7 +302,6 @@ def settings_view(request):
                         user_profile.latitude = location.latitude
                         user_profile.longitude = location.longitude
                     else:
-                        # Dự phòng: Chỉ tìm theo Tỉnh
                         province_str = f"{user_profile.get_province_display()}, Việt Nam"
                         location_province = geolocator.geocode(province_str, country_codes='vn')
                         if location_province:
@@ -303,7 +313,6 @@ def settings_view(request):
             user_profile.save()
             return redirect('home')
         else:
-            print("--- LỖI FORM KHÔNG HỢP LỆ ---")
             print(form.errors)
     else:
         form = ProfileUpdateForm(instance=profile)
@@ -315,100 +324,103 @@ def logout_view(request):
     return redirect('login')
 
 # ==========================================
-# 5. API KẾT BẠN & HẸN HÒ
+# 5. API KẾT BẠN & HẸN HÒ 
 # ==========================================
 
 @login_required
 def send_friend_request(request, user_id):
-    """Gửi lời mời kết bạn"""
     try:
         receiver = User.objects.get(id=user_id)
-        if request.user == receiver:
-            return JsonResponse({'status': 'error', 'message': 'Không thể tự kết bạn với chính mình!'})
-        
-        # Kiểm tra xem đã là bạn bè chưa
-        if request.user.profile.friends.filter(id=receiver.profile.id).exists():
-            return JsonResponse({'status': 'error', 'message': 'Hai người đã là bạn bè!'})
+        if request.user == receiver: return JsonResponse({'status': 'error', 'message': 'Không thể tự kết bạn!'})
+        if request.user.profile.friends.filter(id=receiver.profile.id).exists(): return JsonResponse({'status': 'error', 'message': 'Hai người đã là bạn bè!'})
             
-        # Tạo lời mời kết bạn (dùng get_or_create để tránh spam gửi nhiều lần)
-        freq, created = FriendRequest.objects.get_or_create(
-            sender=request.user, 
-            receiver=receiver,
-            defaults={'status': 'pending'}
-        )
-        
-        if created:
-            return JsonResponse({'status': 'ok', 'message': 'Đã gửi lời mời kết bạn!'})
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Bạn đã gửi lời mời rồi, đang chờ người ta đồng ý!'})
-    except User.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Người dùng không tồn tại'})
-
+        freq, created = FriendRequest.objects.get_or_create(sender=request.user, receiver=receiver, defaults={'status': 'pending'})
+        if created: return JsonResponse({'status': 'ok', 'message': 'Đã gửi lời mời kết bạn!'})
+        else: return JsonResponse({'status': 'error', 'message': 'Bạn đã gửi lời mời rồi!'})
+    except User.DoesNotExist: return JsonResponse({'status': 'error', 'message': 'Lỗi'})
 
 @login_required
 def accept_friend_request(request, request_id):
-    """Chấp nhận lời mời kết bạn"""
     try:
         freq = FriendRequest.objects.get(id=request_id, receiver=request.user, status='pending')
         freq.status = 'accepted'
         freq.save()
-        
-        # Thêm vào danh sách bạn bè của nhau (symmetrical=True nên chỉ cần add 1 phía, DB tự gán phía kia)
         request.user.profile.friends.add(freq.sender.profile)
-        
         return JsonResponse({'status': 'ok', 'message': 'Đã trở thành bạn bè!'})
-    except FriendRequest.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Lời mời không tồn tại hoặc đã bị hủy'})
-
+    except FriendRequest.DoesNotExist: return JsonResponse({'status': 'error', 'message': 'Lỗi'})
 
 @login_required
 def reject_friend_request(request, request_id):
-    """Từ chối lời mời kết bạn"""
     try:
-        freq = FriendRequest.objects.get(id=request_id, receiver=request.user, status='pending')
-        freq.delete() # Xóa luôn cho nhẹ Database
-        return JsonResponse({'status': 'ok', 'message': 'Đã từ chối lời mời'})
-    except FriendRequest.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý'})
+        FriendRequest.objects.get(id=request_id, receiver=request.user, status='pending').delete()
+        return JsonResponse({'status': 'ok', 'message': 'Đã từ chối'})
+    except FriendRequest.DoesNotExist: return JsonResponse({'status': 'error'})
 
-
-@login_required
-def set_dating_partner(request, user_id):
-    """Xác nhận Hẹn hò (Chỉ 1 người duy nhất)"""
-    try:
-        partner = User.objects.get(id=user_id)
-        my_profile = request.user.profile
-        
-        # Cập nhật trạng thái và "đánh dấu chủ quyền"
-        my_profile.dating_with = partner.profile
-        my_profile.marital_status = 'Đang hẹn hò'
-        my_profile.save()
-        
-        return JsonResponse({'status': 'ok', 'message': f'Đã xác nhận hẹn hò với {partner.profile.full_name}! ❤️'})
-    except User.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Người dùng không tồn tại'})
-    
 @login_required
 def cancel_friend_request(request, user_id):
-    """Gỡ lời mời kết bạn đã gửi"""
     try:
         receiver = User.objects.get(id=user_id)
         FriendRequest.objects.filter(sender=request.user, receiver=receiver, status='pending').delete()
-        return JsonResponse({'status': 'ok', 'message': 'Đã thu hồi lời mời kết bạn'})
-    except Exception:
-        return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý'})
+        return JsonResponse({'status': 'ok', 'message': 'Đã thu hồi'})
+    except Exception: return JsonResponse({'status': 'error'})
 
 @login_required
 def get_friend_requests(request):
-    """Lấy danh sách người khác xin kết bạn với mình"""
     requests = FriendRequest.objects.filter(receiver=request.user, status='pending')
     data = []
     for req in requests:
         avatar_url = req.sender.profile.avatar.url if req.sender.profile.avatar else ""
-        data.append({
-            'req_id': req.id,
-            'sender_id': req.sender.id,
-            'name': req.sender.profile.full_name,
-            'avatar': avatar_url
-        })
+        data.append({'req_id': req.id, 'sender_id': req.sender.id, 'name': req.sender.profile.full_name, 'avatar': avatar_url})
     return JsonResponse({'requests': data})
+
+# --- BỘ 3 HÀM XỬ LÝ TỎ TÌNH & HẸN HÒ MỚI ---
+@login_required
+def send_dating_request(request, user_id):
+    try:
+        receiver = User.objects.get(id=user_id)
+        my_profile = request.user.profile
+        
+        if my_profile.dating_with:
+            return JsonResponse({'status': 'error', 'message': 'Bạn đã có người yêu rồi! Bắt cá 2 tay là không tốt đâu nhé!'})
+            
+        DatingRequest.objects.get_or_create(sender=request.user, receiver=receiver, defaults={'status': 'pending'})
+        return JsonResponse({'status': 'ok', 'message': 'Đã gửi lời tỏ tình! Hãy chờ người ấy đồng ý ❤️'})
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý'})
+
+@login_required
+def cancel_dating_request(request, user_id):
+    try:
+        receiver = User.objects.get(id=user_id)
+        DatingRequest.objects.filter(sender=request.user, receiver=receiver, status='pending').delete()
+        return JsonResponse({'status': 'ok', 'message': 'Đã rút lại lời tỏ tình 💔'})
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý'})
+
+@login_required
+def accept_dating_request(request, user_id):
+    try:
+        partner = User.objects.get(id=user_id)
+        my_profile = request.user.profile
+        partner_profile = partner.profile
+        
+        # 1. Chuyển status request
+        req = DatingRequest.objects.get(sender=partner, receiver=request.user, status='pending')
+        req.status = 'accepted'
+        req.save()
+        
+        # 2. Gắn chủ quyền cho cả 2 người
+        my_profile.dating_with = partner_profile
+        my_profile.marital_status = 'Đang hẹn hò'
+        my_profile.save()
+        
+        partner_profile.dating_with = my_profile
+        partner_profile.marital_status = 'Đang hẹn hò'
+        partner_profile.save()
+        
+        # 3. Xóa các request rác khác (nếu có)
+        DatingRequest.objects.filter(Q(sender=request.user) | Q(receiver=request.user), status='pending').delete()
+        
+        return JsonResponse({'status': 'ok', 'message': f'Chúc mừng! Bạn và {partner_profile.full_name} đã chính thức hẹn hò 💕'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': 'Lỗi xử lý hoặc lời mời không tồn tại'})
