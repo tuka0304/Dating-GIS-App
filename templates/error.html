@@ -1,18 +1,12 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Thông báo</title>
-    <style>
-        body { 
-            background-color: #313338; color: #dbdee1; font-family: sans-serif; 
-            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
-        }
-        .container { text-align: center; padding: 30px; background: #2b2d31; border-radius: 8px; }
-        a { color: #5865f2; font-weight: bold; text-decoration: none; }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body>
+<body class="page-error">
     <div class="container">
         <h1>⚠️ Chưa có dữ liệu!</h1>
         <p>{{ message }}</p>

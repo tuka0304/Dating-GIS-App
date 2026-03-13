@@ -5,84 +5,20 @@
     <meta charset="UTF-8">
     <title>Đăng ký - Dating GIS 💖</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        /* --- RESET & NỀN --- */
-        body { 
-            background: linear-gradient(135deg, #ffe4e1 0%, #ffb6c1 100%); 
-            color: #880e4f; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; margin: 0; 
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* --- HỘP FORM (CARD) --- */
-        .box { 
-            background: rgba(255, 255, 255, 0.95); 
-            padding: 40px; border-radius: 20px; width: 380px; 
-            box-shadow: 0 10px 30px rgba(233, 30, 99, 0.2); 
-            text-align: center; border: 2px solid #fff;
-            position: relative; z-index: 10;
-        }
-        h2 { color: #d81b60; margin-bottom: 20px; font-weight: 800; }
-        
-        /* --- CÁC Ô NHẬP LIỆU (INPUT) --- */
-        p { margin: 15px 0; text-align: left; }
-        label { display: block; font-size: 13px; font-weight: bold; color: #c2185b; margin-bottom: 5px; }
-        input, select { 
-            width: 100%; padding: 12px; background: #fff0f5; 
-            border: 1px solid #ffb6c1; color: #880e4f; 
-            border-radius: 10px; box-sizing: border-box; font-size: 14px;
-            transition: 0.3s;
-        }
-        input:focus, select:focus { 
-            outline: none; border-color: #ff69b4; 
-            box-shadow: 0 0 8px rgba(255, 105, 180, 0.3); 
-        }
-        
-        /* Ẩn các text hướng dẫn thừa thãi của Django */
-        .helptext { display: none; } 
-        ul { list-style: none; padding: 0; color: #e74c3c; font-size: 12px; text-align: left; margin-top: 5px;}
-        
-        /* --- NÚT BẤM & LINK --- */
-        button { 
-            width: 100%; padding: 14px; 
-            background: linear-gradient(45deg, #ff69b4, #d81b60); 
-            color: white; border: none; border-radius: 25px; cursor: pointer; 
-            font-weight: bold; margin-top: 25px; font-size: 16px; 
-            transition: 0.3s; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
-        }
-        button:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4); 
-        }
-        
-        a { color: #ff4081; text-decoration: none; font-weight: bold; transition: 0.2s;}
-        a:hover { color: #c2185b; text-decoration: underline; }
-
-        /* Icon trái tim chìm ở background */
-        .bg-icon {
-            position: absolute; font-size: 300px; color: rgba(255, 255, 255, 0.4);
-            z-index: 0; bottom: -50px; right: -80px; transform: rotate(-20deg); pointer-events: none;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body>
+<body class="page-register">
     <i class="fas fa-heart bg-icon"></i>
-    
     <div class="box">
         <h2>Bắt đầu hành trình 💖</h2>
         <p style="text-align: center; color: #ad1457; font-size: 14px; margin-top: -15px; margin-bottom: 25px;">
             Hãy điền thông tin để tìm kiếm nửa kia nhé!
         </p>
-        
         <form method="POST">
             {% csrf_token %} 
             {{ form.as_p }}
             <button type="submit"><i class="fas fa-paper-plane"></i> Đăng ký ngay</button>
         </form>
-        
         <div style="margin-top: 25px; font-size: 14px; color: #880e4f;">
             Đã có tài khoản? <a href="{% url 'login' %}">Đăng nhập</a>
         </div>

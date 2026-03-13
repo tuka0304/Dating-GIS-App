@@ -5,49 +5,11 @@
     <meta charset="UTF-8">
     <title>Cài đặt hồ sơ</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        /* ... (Giữ nguyên CSS cũ của bạn) ... */
-        body {
-            background: linear-gradient(135deg, #ffe4e1 0%, #ffc0cb 100%);
-            color: #880e4f;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; margin: 0; padding: 20px;
-        }
-        .container {
-            background: #fffafa; padding: 30px; border-radius: 15px; width: 500px;
-            box-shadow: 0 5px 25px rgba(255, 105, 180, 0.2); border: 2px solid #ffb6c1;
-        }
-        h2 { color: #c2185b; text-align: center; margin-bottom: 25px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #c2185b; }
-        
-        /* Class này khớp với 'class': 'form-input' trong forms.py */
-        .form-input, input[type="text"], input[type="file"], select, textarea {
-            width: 100%; padding: 12px; border-radius: 8px;
-            border: 1px solid #ffc0cb; background: #fff; color: #880e4f;
-            box-sizing: border-box; transition: 0.3s;
-        }
-        .form-input:focus { outline: none; border-color: #ff69b4; box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1); }
-
-        button[type="submit"] {
-            width: 100%; padding: 12px; border: none; border-radius: 25px;
-            background: linear-gradient(45deg, #ff69b4, #d81b60);
-            color: white; font-weight: bold; cursor: pointer; margin-top: 15px;
-        }
-        
-        .error-list { color: red; font-size: 12px; margin-top: 5px; }
-        
-        /* GPS Styles */
-        .gps-box { background: #fff0f5; padding: 15px; border-radius: 10px; border: 1px dashed #ffb6c1; }
-        .btn-geo { background: #fff; border: 1px solid #ff69b4; color: #ff69b4; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
-        a { color: #c2185b; text-decoration: none; font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body>
+<body class="page-settings">
     <div class="container">
         <h2>✏️ Chỉnh sửa hồ sơ</h2>
-        
         {% if form.errors %}
             <div style="background: #ffebee; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ef5350;">
                 <strong style="color: #c62828;">⚠️ Có lỗi xảy ra:</strong>
@@ -61,105 +23,38 @@
         
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            
-            <div class="form-group">
-                <label>Họ và tên:</label>
-                {{ form.full_name }}
-            </div>
-            
+            <div class="form-group"><label>Họ và tên:</label>{{ form.full_name }}</div>
             <div class="form-group" style="display: flex; gap: 15px;">
-                <div style="flex: 1;">
-                    <label>Ngày sinh:</label>
-                    {{ form.birth_date }}
-                </div>
-                <div style="flex: 1;">
-                    <label>Giới tính:</label>
-                    {{ form.gender }}
-                </div>
+                <div style="flex: 1;"><label>Ngày sinh:</label>{{ form.birth_date }}</div>
+                <div style="flex: 1;"><label>Giới tính:</label>{{ form.gender }}</div>
             </div>
-<div class="form-group"><label>Tình trạng quan hệ:</label> {{ form.marital_status }}</div>
-            <div class="form-group">
-                <label>Khu vực sinh sống:</label>
-                {{ form.province }}
-            </div>
-
-            <div class="form-group">
-                <label>Địa chỉ chi tiết:</label>
-                {{ form.address }}
-            </div>
-
+            <div class="form-group"><label>Tình trạng quan hệ:</label> {{ form.marital_status }}</div>
+            <div class="form-group"><label>Khu vực sinh sống:</label>{{ form.province }}</div>
+            <div class="form-group"><label>Địa chỉ chi tiết:</label>{{ form.address }}</div>
             <div class="form-group gps-box">
                 <label style="color: #c2185b;">📍 Vị trí:</label>
                 <div style="margin-bottom: 10px;">
-                    <button type="button" class="btn-geo" onclick="getLocation()">
-                        <i class="fas fa-location-arrow"></i> Lấy vị trí hiện tại
-                    </button>
+                    <button type="button" class="btn-geo" onclick="getLocation()"><i class="fas fa-location-arrow"></i> Lấy vị trí hiện tại</button>
                     <span id="geo-msg" style="font-size:13px; margin-left:10px;"></span>
                 </div>
                 <div style="display: flex; gap: 15px;">
-                    <div style="flex:1">
-                        <label style="font-size: 12px;">Vĩ độ:</label>
-                        {{ form.latitude }} </div>
-                    <div style="flex:1">
-                        <label style="font-size: 12px;">Kinh độ:</label>
-                        {{ form.longitude }} </div>
+                    <div style="flex:1"><label style="font-size: 12px;">Vĩ độ:</label>{{ form.latitude }} </div>
+                    <div style="flex:1"><label style="font-size: 12px;">Kinh độ:</label>{{ form.longitude }} </div>
                 </div>
             </div>
-
-            <div class="form-group">
-                <label>📷 Ảnh đại diện:</label>
-                {{ form.avatar }}
-            </div>
-            <div class="form-group">
-                <label>🖼️ Ảnh bìa:</label>
-                {{ form.cover_photo }}
-            </div>
-
-            <div class="form-group">
-                <label>📝 Giới thiệu (Bio):</label>
-                {{ form.bio }}
-            </div>
-
-            <div class="form-group">
-                <label>🎯 Sở thích (Hobbies):</label>
-                {{ form.hobbies }}
-            </div>
-
+            <div class="form-group"><label>📷 Ảnh đại diện:</label>{{ form.avatar }}</div>
+            <div class="form-group"><label>🖼️ Ảnh bìa:</label>{{ form.cover_photo }}</div>
+            <div class="form-group"><label>📝 Giới thiệu (Bio):</label>{{ form.bio }}</div>
+            <div class="form-group"><label>🎯 Sở thích (Hobbies):</label>{{ form.hobbies }}</div>
             <div class="form-group">
                 <label>🎵 Bài hát yêu thích (Deezer):</label>
                 {{ form.music_playlist }}
-                <small style="display:block; margin-top:5px; color:#888; font-size:12px;">
-                    * Ví dụ: "Nơi này có anh Sơn Tùng"
-                </small>
+                <small style="display:block; margin-top:5px; color:#888; font-size:12px;">* Ví dụ: "Nơi này có anh Sơn Tùng"</small>
             </div>
-
             <button type="submit">💖 Lưu thay đổi</button>
-            <div style="text-align: center; margin-top: 20px;">
-                <a href="{% url 'home' %}">Quay lại trang chủ</a>
-            </div>
+            <div style="text-align: center; margin-top: 20px;"><a href="{% url 'home' %}">Quay lại trang chủ</a></div>
         </form>
     </div>
-
-    <script>
-        function getLocation() {
-            const status = document.getElementById('geo-msg');
-            // Vì dùng {{ form.latitude }}, ID mặc định của Django là id_latitude
-            const latInput = document.getElementById('id_latitude');
-            const lonInput = document.getElementById('id_longitude');
-
-            status.innerHTML = '⏳ Đang tìm...';
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (p) => {
-                        latInput.value = p.coords.latitude;
-                        lonInput.value = p.coords.longitude;
-                        status.innerHTML = '✅ Đã tìm thấy!';
-                        status.style.color = 'green';
-                    },
-                    () => { status.innerHTML = '❌ Lỗi vị trí'; status.style.color = 'red'; }
-                );
-            }
-        }
-    </script>
+    <script src="{% static 'js/script.js' %}"></script>
 </body>
 </html>
