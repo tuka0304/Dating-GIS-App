@@ -100,3 +100,12 @@ class Message(models.Model):
     
     class Meta:
         ordering = ['timestamp']
+
+class DatingRequest(models.Model):
+    sender = models.ForeignKey(User, related_name='dating_requests_sent', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(User, related_name='dating_requests_received', on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, default='pending') # pending, accepted
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('sender', 'receiver') # Tránh spam gửi nhiều lần

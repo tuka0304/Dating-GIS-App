@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-
+import os
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -23,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-snqp27yhbros1b7m=-y^koo2osz219hweazb+wi-u=9+j@_8lx'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = 'RENDER' not in os.environ
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,17 +76,23 @@ WSGI_APPLICATION = 'dating_project.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # dating_project/settings.py
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dating_db',       # Tên DB bạn vừa tạo ở Bước 1
-        'USER': 'postgres',        # Tên đăng nhập mặc định
-        'PASSWORD': '123', # ⚠️ Thay mật khẩu bạn đã đặt lúc cài Postgres vào đây
-        'HOST': 'localhost',       # Chạy trên máy cá nhân
-        'PORT': '5432',            # Cổng mặc định của Postgres
+        'NAME': 'dating_db',        # Tên DB bạn vừa tạo ở Bước 1
+        'USER': 'postgres',         # Tên đăng nhập mặc định
+        'PASSWORD': '123',          # Thay mật khẩu bạn đã đặt lúc cài Postgres vào đây
+        'HOST': 'localhost',        # Chạy trên máy cá nhân
+        'PORT': '5432',             # Cổng mặc định của Postgres
     }
 }
+
+# --- Lệnh if phải nằm HẲN BÊN NGOÀI khối DATABASES ở trên ---
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 
 # Password validation
@@ -122,6 +130,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
