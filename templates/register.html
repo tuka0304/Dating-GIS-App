@@ -5,20 +5,25 @@
     <meta charset="UTF-8">
     <title>Đăng ký - Dating GIS 💖</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
 </head>
+
 <body class="page-register">
     <i class="fas fa-heart bg-icon"></i>
+    
     <div class="box">
         <h2>Bắt đầu hành trình 💖</h2>
         <p style="text-align: center; color: #ad1457; font-size: 14px; margin-top: -15px; margin-bottom: 25px;">
             Hãy điền thông tin để tìm kiếm nửa kia nhé!
         </p>
+        
         <form method="POST">
             {% csrf_token %} 
             {{ form.as_p }}
             <button type="submit"><i class="fas fa-paper-plane"></i> Đăng ký ngay</button>
         </form>
+        
         <div style="margin-top: 25px; font-size: 14px; color: #880e4f;">
             Đã có tài khoản? <a href="{% url 'login' %}">Đăng nhập</a>
         </div>

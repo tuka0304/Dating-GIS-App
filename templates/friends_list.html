@@ -1,0 +1,80 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách Bạn bè 👥 | Dating GIS</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body { background: #fff0f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0;}
+        .container { max-width: 700px; margin: 40px auto; padding: 0 20px; }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { color: #d81b60; margin: 0; font-size: 26px; }
+        .back-btn { background: white; color: #d81b60; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 10px rgba(216, 27, 96, 0.15); transition: 0.3s; }
+        .back-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(216, 27, 96, 0.25); }
+
+        /* Card Bạn bè */
+        .friend-card { background: white; border-radius: 18px; padding: 15px 20px; display: flex; align-items: center; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); transition: 0.3s; border: 1px solid #ffe4e1; }
+        .friend-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(216, 27, 96, 0.1); border-color: #ffb6c1; }
+        
+        .friend-avatar { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid #ff69b4; margin-right: 18px; }
+        .friend-info { flex: 1; }
+        .friend-name { font-size: 18px; font-weight: bold; color: #333; margin: 0 0 6px 0; }
+        .friend-location { font-size: 13px; color: #666; margin: 0; }
+        .friend-location i { color: #ff69b4; width: 15px; }
+
+        /* Nút hành động */
+        .action-btn { background: linear-gradient(45deg, #ff69b4, #d81b60); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; text-decoration: none; display: inline-block;}
+        .action-btn:hover { opacity: 0.9; transform: scale(1.05); }
+
+        .empty-state { text-align: center; color: #999; padding: 60px 0; background: white; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bạn bè của tôi ({{ friends|length }})</h1>
+            <a href="{% url 'home' %}" class="back-btn"><i class="fas fa-arrow-left"></i> Quay lại</a>
+        </div>
+
+        <div class="friends-list">
+            {% for friend in friends %}
+            <div class="friend-card">
+                {% if friend.avatar %}
+                    <img src="{{ friend.avatar.url }}" class="friend-avatar" alt="avatar">
+                {% else %}
+                    <img src="https://ui-avatars.com/api/?name={{ friend.full_name }}&background=ff69b4&color=fff" class="friend-avatar" alt="avatar">
+                {% endif %}
+                
+                <div class="friend-info">
+                    <h3 class="friend-name">{{ friend.full_name }}</h3>
+                    <p class="friend-location">
+                        <i class="fas fa-map-marker-alt"></i> 
+                        {{ friend.get_province_display|default:"Chưa cập nhật địa chỉ" }}
+                    </p>
+                    <p class="friend-location" style="margin-top: 4px;">
+                        <i class="fas fa-quote-left" style="font-size: 10px;"></i> 
+                        {{ friend.bio|truncatechars:40|default:"Đang online" }}
+                    </p>
+                </div>
+                
+                <div class="friend-actions">
+                    <!-- Nút này đưa người dùng về bản đồ chính để mở chat -->
+                    <a href="{% url 'home' %}" class="action-btn"><i class="fas fa-comment-dots"></i> Nhắn tin</a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-user-friends" style="font-size: 50px; color: #ffd1dc; margin-bottom: 15px;"></i>
+                <p>Danh sách bạn bè đang trống.</p>
+                <p style="font-size: 14px; margin-top: 5px;">Hãy ra ngoài Bản đồ và gửi lời mời kết bạn nhé! 💕</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

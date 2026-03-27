@@ -109,3 +109,12 @@ class DatingRequest(models.Model):
 
     class Meta:
         unique_together = ('sender', 'receiver') # Tránh spam gửi nhiều lần
+
+class Appeal(models.Model):
+    username = models.CharField(max_length=150)
+    message = models.TextField()
+    is_resolved = models.BooleanField(default=False) # Trạng thái: Admin đã đọc/xử lý chưa
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Kháng cáo từ {self.username}"

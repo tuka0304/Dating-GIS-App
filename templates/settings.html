@@ -34,12 +34,22 @@
             <div class="form-group gps-box">
                 <label style="color: #c2185b;">📍 Vị trí:</label>
                 <div style="margin-bottom: 10px;">
-                    <button type="button" class="btn-geo" onclick="getLocation()"><i class="fas fa-location-arrow"></i> Lấy vị trí hiện tại</button>
+                    <button type="button" class="btn-geo" onclick="getLocation()">
+                        <i class="fas fa-location-arrow"></i> Lấy vị trí hiện tại
+                    </button>
                     <span id="geo-msg" style="font-size:13px; margin-left:10px;"></span>
                 </div>
                 <div style="display: flex; gap: 15px;">
-                    <div style="flex:1"><label style="font-size: 12px;">Vĩ độ:</label>{{ form.latitude }} </div>
-                    <div style="flex:1"><label style="font-size: 12px;">Kinh độ:</label>{{ form.longitude }} </div>
+                    <div style="flex:1">
+                        <label style="font-size: 12px;">Vĩ độ:</label>
+                        <span id="lat-display" style="font-weight: bold; color: #d81b60;">Đang chờ...</span>
+                        <input type="hidden" id="id_latitude" name="latitude" value="">
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size: 12px;">Kinh độ:</label>
+                        <span id="lon-display" style="font-weight: bold; color: #d81b60;">Đang chờ...</span>
+                        <input type="hidden" id="id_longitude" name="longitude" value="">
+                    </div>
                 </div>
             </div>
             <div class="form-group"><label>📷 Ảnh đại diện:</label>{{ form.avatar }}</div>
@@ -47,7 +57,7 @@
             <div class="form-group"><label>📝 Giới thiệu (Bio):</label>{{ form.bio }}</div>
             <div class="form-group"><label>🎯 Sở thích (Hobbies):</label>{{ form.hobbies }}</div>
             <div class="form-group">
-                <label>🎵 Bài hát yêu thích (Deezer):</label>
+                <label>🎵 Bài hát yêu thích (Spotify):</label>
                 {{ form.music_playlist }}
                 <small style="display:block; margin-top:5px; color:#888; font-size:12px;">* Ví dụ: "Nơi này có anh Sơn Tùng"</small>
             </div>
@@ -55,6 +65,6 @@
             <div style="text-align: center; margin-top: 20px;"><a href="{% url 'home' %}">Quay lại trang chủ</a></div>
         </form>
     </div>
-    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/script.js' %}?v=1"></script>
 </body>
 </html>

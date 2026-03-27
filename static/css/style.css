@@ -118,3 +118,235 @@
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .tear-off-exit { animation: tearExit 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards; }
 .tear-off-enter { animation: tearEnter 0.4s ease-out forwards; }
+/* =========================================
+   6. TRANG KHÁNG CÁO (APPEAL) - DARK THEME
+========================================= */
+.page-appeal { background-color: #313338; color: #dbdee1; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.page-appeal .box { background: #2b2d31; padding: 40px; border-radius: 8px; width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align: center; }
+.page-appeal h2 { color: #f2f3f5; margin-bottom: 10px; }
+.page-appeal input, .page-appeal textarea { width: 100%; padding: 12px; margin: 8px 0; background: #1e1f22; border: 1px solid #1e1f22; color: white; border-radius: 4px; box-sizing: border-box; font-family: inherit;}
+.page-appeal input:focus, .page-appeal textarea:focus { outline: none; border-color: #5865f2; }
+.page-appeal button { width: 100%; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 15px; font-size: 16px; transition: 0.2s; }
+.page-appeal button:hover { background: #c0392b; }
+.page-appeal a { color: #00a8fc; text-decoration: none; font-size: 14px; }
+.page-appeal a:hover { text-decoration: underline; }
+
+/* =========================================
+   7. TRANG QUẢN TRỊ (CUSTOM ADMIN)
+========================================= */
+.page-admin { margin: 0; font-family: 'Segoe UI', sans-serif; background: #fff0f5; color: #880e4f; }
+.page-admin .navbar { background: linear-gradient(45deg, #d81b60, #8e24aa); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.page-admin .navbar h2 { margin: 0; font-size: 20px; }
+.page-admin .navbar a { color: white; text-decoration: none; font-weight: bold; background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; transition: 0.2s;}
+.page-admin .navbar a:hover { background: rgba(255,255,255,0.4); }
+.page-admin .container { padding: 30px; max-width: 1200px; margin: auto; }
+.page-admin .stats-grid { display: flex; gap: 20px; margin-bottom: 30px; }
+.page-admin .stat-card { flex: 1; background: white; padding: 20px; border-radius: 12px; border-left: 5px solid #ff69b4; box-shadow: 0 5px 15px rgba(255,182,193,0.3); display: flex; align-items: center; gap: 15px; }
+.page-admin .stat-icon { font-size: 30px; color: #ff69b4; background: #fff0f5; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; border-radius: 50%; }
+.page-admin .stat-info h3 { margin: 0 0 5px 0; font-size: 24px; color: #d81b60; }
+.page-admin .stat-info p { margin: 0; color: #888; font-size: 14px; font-weight: bold; text-transform: uppercase; }
+.page-admin .table-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 5px 15px rgba(255,182,193,0.3); overflow-x: auto; }
+.page-admin table { width: 100%; border-collapse: collapse; text-align: left; }
+.page-admin th { background: #ffe4e1; color: #d81b60; padding: 15px; font-weight: bold; border-bottom: 2px solid #ffb6c1; }
+.page-admin td { padding: 15px; border-bottom: 1px solid #ffe4e1; vertical-align: middle; }
+.page-admin tr:hover { background: #fffafa; }
+.page-admin .avatar-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #ffb6c1; vertical-align: middle; margin-right: 10px; }
+.page-admin .btn { border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+.page-admin .btn:hover { transform: scale(1.05); }
+.page-admin .btn-delete { background: #e74c3c; } .page-admin .btn-delete:hover { background: #c0392b; }
+.page-admin .btn-suspend { background: #f39c12; } .page-admin .btn-suspend:hover { background: #e67e22; }
+.page-admin .btn-unlock { background: #27ae60; } .page-admin .btn-unlock:hover { background: #2ecc71; }
+.page-admin .btn-avatar { background: #95a5a6; } .page-admin .btn-avatar:hover { background: #7f8c8d; }
+.page-admin .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
+/* =========================================
+   8. CHILL RADIO WIDGET (Trang Map)
+========================================= */
+.chill-radio-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 390px; /* Đặt cách xa khung chat một chút */
+    width: 280px;
+    background: #fffafa;
+    border-radius: 12px;
+    border: 2px solid #ffb6c1;
+    box-shadow: 0 5px 25px rgba(255, 105, 180, 0.4);
+    z-index: 2500;
+    transition: 0.3s;
+}
+.radio-header {
+    background: linear-gradient(45deg, #ff69b4, #d81b60);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-size: 13px;
+    box-shadow: inset 0 -2px 5px rgba(0,0,0,0.1);
+}
+.radio-body {
+    display: none; /* Ẩn mặc định cho gọn màn hình */
+    background: #282828;
+    border-radius: 0 0 10px 10px;
+}
+/* Giao diện thanh tìm kiếm nhạc */
+.embedded-radio .radio-search {
+    display: flex; padding: 6px 10px; background: #1e1f22; border-bottom: 1px solid #333;
+}
+.embedded-radio .radio-search input {
+    flex: 1; padding: 6px 12px; border: none; border-radius: 15px;
+    background: #2b2d31; color: white; font-size: 12px; outline: none; font-family: inherit;
+}
+.embedded-radio .radio-search button {
+    background: transparent; border: none; color: #ff69b4; padding: 0 5px 0 10px;
+    cursor: pointer; transition: 0.2s;
+}
+.embedded-radio .radio-search button:hover { color: #d81b60; transform: scale(1.1); }
+/* NÚT BONG BÓNG NHẠC */
+.music-fab {
+    position: fixed;
+    bottom: 90px;
+    left: 20px; /* Nằm đối xứng với nút nhắn tin bên phải */
+    width: 55px;
+    height: 55px;
+    background: linear-gradient(45deg, #9b59b6, #8e44ad);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 22px;
+    box-shadow: 0 5px 15px rgba(155, 89, 182, 0.4);
+    cursor: pointer;
+    z-index: 2000;
+    transition: 0.3s;
+}
+.music-fab:hover {
+    transform: scale(1.1);
+}
+/* =========================================
+   9. GIAO DIỆN TRANG ĐĂNG NHẬP (LOGIN)
+========================================= */
+.page-login {
+    background: #fff0f5; /* Nền hồng nhạt */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.page-login .box {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(216, 27, 96, 0.15);
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+}
+
+.page-login h2 {
+    color: #d81b60;
+    margin-bottom: 25px;
+    font-size: 24px;
+}
+
+/* Các ô nhập liệu */
+.page-login input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border: 1.5px solid #ffd1dc;
+    border-radius: 10px;
+    box-sizing: border-box;
+    outline: none;
+    transition: 0.3s;
+}
+
+.page-login input:focus {
+    border-color: #ff69b4;
+    box-shadow: 0 0 8px rgba(255, 105, 180, 0.2);
+}
+
+/* Nút đăng nhập */
+.page-login button {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(45deg, #ff69b4, #d81b60);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 10px;
+}
+
+.page-login button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(216, 27, 96, 0.3);
+}
+
+/* Link đăng ký ở dưới */
+.page-login .footer {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #666;
+}
+
+.page-login .footer a {
+    color: #d81b60;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.page-login .footer a:hover {
+    text-decoration: underline;
+}
+
+/* Hiệu ứng rung nhẹ khi có lỗi */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.error-container {
+    animation: shake 0.4s ease-in-out;
+}
+/* CSS cho danh sách thả xuống của Chill Radio */
+#radio-results::-webkit-scrollbar {
+    width: 6px;
+}
+#radio-results::-webkit-scrollbar-thumb {
+    background-color: #ff69b4;
+    border-radius: 10px;
+}
+#radio-results .track-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #3f4147;
+    transition: 0.2s;
+}
+#radio-results .track-item:hover {
+    background: #474a51;
+}
+#radio-results .track-item img {
+    width: 40px; height: 40px; border-radius: 5px; margin-right: 12px;
+}
+#radio-results .track-info {
+    flex: 1; overflow: hidden;
+}
+#radio-results .track-name {
+    color: white; font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#radio-results .track-artist {
+    color: #aaa; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;
+}

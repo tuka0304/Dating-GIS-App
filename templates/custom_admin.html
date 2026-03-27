@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Quản Trị - Dating GIS</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2">
+</head>
+<body class="page-admin">
+    <div class="navbar">
+        <h2><i class="fas fa-shield-alt"></i> Hệ Thống Quản Trị - Dating GIS</h2>
+        <a href="{% url 'home' %}"><i class="fas fa-arrow-left"></i> Về trang chủ Bản đồ</a>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-info"><h3>{{ total_users }}</h3><p>Thành viên</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-user-friends"></i></div>
+                <div class="stat-info"><h3>{{ total_friends }}</h3><p>Lượt xin kết bạn</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
+                <div class="stat-info"><h3>{{ total_dating }}</h3><p>Lượt tỏ tình</p></div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3 style="color: #d81b60; margin-top: 0;"><i class="fas fa-list-ul"></i> Danh sách Thành viên</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Hồ sơ</th>
+                        <th>Tài khoản</th>
+                        <th>Tình trạng</th>
+                        <th>Thao tác quản lý</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in profiles %}
+                    <tr style="{% if not p.user.is_active %}opacity: 0.6; background: #fdf2f2;{% endif %}">
+                        <td><b>#{{ p.user.id }}</b></td>
+                        <td>
+                            {% if p.avatar %}
+                                <img src="{{ p.avatar.url }}" class="avatar-img">
+                            {% else %}
+                                <img src="https://ui-avatars.com/api/?name={{ p.full_name }}&background=ffb6c1&color=fff" class="avatar-img">
+                            {% endif %}
+                            {{ p.full_name }} ({{ p.get_age }} tuổi)
+                        </td>
+                        <td>{{ p.user.username }}</td>
+                        <td>
+                            {% if not p.user.is_active %}
+                                <span style="background: #e74c3c; color: white; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;"><i class="fas fa-ban"></i> Bị Đình Chỉ</span>
+                            {% elif p.marital_status == 'Đang hẹn hò' %}
+                                <span style="background: #ffb6c1; color: #880e4f; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;"><i class="fas fa-heart"></i> Có bồ</span>
+                            {% else %}
+                                <span style="background: #eee; color: #555; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;">Độc thân</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                {% if p.user.is_active %}
+                                    <a href="{% url 'admin_toggle_status' p.user.id %}" onclick="return confirm('Đình chỉ tài khoản này? Người dùng sẽ bị văng ra và không thể đăng nhập lại!')">
+                                        <button class="btn btn-suspend"><i class="fas fa-ban"></i> Khóa</button>
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'admin_toggle_status' p.user.id %}" onclick="return confirm('Cho phép tài khoản này hoạt động trở lại?')">
+                                        <button class="btn btn-unlock"><i class="fas fa-unlock"></i> Mở khóa</button>
+                                    </a>
+                                {% endif %}
+
+                                {% if p.avatar %}
+                                    <a href="{% url 'admin_remove_avatar' p.user.id %}" onclick="return confirm('Ảnh này nhạy cảm/vi phạm? Xóa và đưa về ảnh mặc định?')">
+                                        <button class="btn btn-avatar"><i class="fas fa-image"></i> Gỡ ảnh</button>
+                                    </a>
+                                {% endif %}
+
+                                <a href="{% url 'admin_delete_user' p.user.id %}" onclick="return confirm('Bạn có chắc chắn muốn XÓA vĩnh viễn người dùng này không? Hành động này không thể hoàn tác!')">
+                                    <button class="btn btn-delete"><i class="fas fa-trash"></i> Xóa tài khoản</button>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #888; padding: 30px;">Chưa có thành viên nào đăng ký.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-container" style="margin-top: 30px;">
+            <h3 style="color: #e74c3c; margin-top: 0;"><i class="fas fa-envelope-open-text"></i> Đơn Kháng Cáo Chờ Duyệt</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Người gửi (Tài khoản)</th>
+                        <th>Nội dung kháng cáo</th>
+                        <th>Thời gian</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ap in appeals %}
+                    <tr>
+                        <td><b style="color: #d81b60;">{{ ap.username }}</b></td>
+                        <td style="max-width: 300px; line-height: 1.5; color: #555;"><i>"{{ ap.message }}"</i></td>
+                        <td>{{ ap.created_at|date:"H:i d/m/Y" }}</td>
+                        <td>
+                            <a href="{% url 'admin_resolve_appeal' ap.id %}" onclick="return confirm('Đánh dấu là đã xử lý xong?')">
+                                <button class="btn btn-unlock"><i class="fas fa-check"></i> Đã đọc & Xử lý</button>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #888; padding: 30px;">Hiện tại cộng đồng đang rất bình yên, không có ai kêu oan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

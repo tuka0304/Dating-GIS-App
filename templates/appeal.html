@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Kháng Cáo - Dating GIS</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2">
+</head>
+<body class="page-appeal">
+    <div class="box">
+        {% if success %}
+            <h2>✅ Đã gửi thành công!</h2>
+            <p style="color: #949ba4; font-size: 14px; line-height: 1.5;">Phản hồi đã được gửi đến Admin. Vui lòng chờ xem xét và thử đăng nhập lại sau nhé.</p>
+            <a href="{% url 'login' %}"><button style="background: #5865f2;">Quay lại Đăng nhập</button></a>
+        {% else %}
+            <h2>⚖️ Gửi Kháng Cáo</h2>
+            <p style="color: #949ba4; font-size: 14px; margin-bottom: 20px;">Tài khoản bị khóa. Hãy cho Admin biết lý do để được xem xét mở lại nhé!</p>
+            <form method="post">
+                {% csrf_token %}
+                <input type="text" name="username" value="{{ username }}" readonly style="color: #888;">
+                <textarea name="message" rows="5" placeholder="Nhập lý do kháng cáo / lời xin lỗi của bạn..." required></textarea>
+                <button type="submit">Gửi cho Admin</button>
+            </form>
+            <div style="margin-top: 15px;"><a href="{% url 'login' %}">Hủy và quay lại</a></div>
+        {% endif %}
+    </div>
+</body>
+</html>

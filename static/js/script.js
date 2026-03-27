@@ -1,29 +1,45 @@
 /* =========================================
    1. SCRIPT TRANG SETTINGS (GPS)
 ========================================= */
-function getLocation() {
+window.getLocation = function() {
     const status = document.getElementById('geo-msg');
     const latInput = document.getElementById('id_latitude');
     const lonInput = document.getElementById('id_longitude');
+    const latDisplay = document.getElementById('lat-display');
+    const lonDisplay = document.getElementById('lon-display');
 
-    if(!status || !latInput || !lonInput) return; // Bỏ qua nếu không ở trang Settings
+    if (!latInput || !lonInput) return; // Nếu không ở trang Settings thì ngưng
 
     status.innerHTML = '⏳ Đang tìm...';
+    status.style.color = '#888';
+    
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (p) => {
-                latInput.value = p.coords.latitude;
-                lonInput.value = p.coords.longitude;
+                // Điền vào ô ẩn để gửi về Server
+                if (latInput) latInput.value = p.coords.latitude;
+                if (lonInput) lonInput.value = p.coords.longitude;
+                
+                // Hiển thị ra dòng chữ cho người dùng xem
+                if (latDisplay) latDisplay.innerText = p.coords.latitude.toFixed(6);
+                if (lonDisplay) lonDisplay.innerText = p.coords.longitude.toFixed(6);
+                
                 status.innerHTML = '✅ Đã tìm thấy!';
                 status.style.color = 'green';
             },
-            () => { status.innerHTML = '❌ Lỗi vị trí'; status.style.color = 'red'; }
+            (error) => { 
+                console.error("Lỗi GPS:", error);
+                status.innerHTML = '❌ Trình duyệt từ chối cấp quyền'; 
+                status.style.color = 'red'; 
+            }
         );
+    } else {
+        status.innerHTML = '❌ Trình duyệt không hỗ trợ';
     }
-}
+};
 
 /* =========================================
-   2. SCRIPT TRANG MAP SEARCH
+   2. SCRIPT TRANG MAP SEARCH CHÍNH
 ========================================= */
 function getCSRFToken() {
     let cookieValue = null;
@@ -65,6 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
         let currentRelStatus = 'none'; 
         let currentDatingStatus = 'none'; 
         let chatInterval;
+        let profileStartTime = 0; 
+        let currentViewedUserId = null;
 
         function initMap() {
             if(typeof L === 'undefined') throw new Error("Mất kết nối Map Library");
@@ -138,23 +156,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 btnDate.classList.remove('heartbeat-btn');
             }
 
-            // --- ẢNH & NHẠC ---
+            // --- ẢNH GALLERY ---
             const galleryDiv = document.getElementById('p-gallery-grid');
             let html = `<img src="${avatarUrl}" style="width:100%; height:100px; object-fit:cover; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`;
             if(u.gallery) u.gallery.forEach(img => html += `<img src="${img}" style="width:100%; height:100px; object-fit:cover; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`);
             galleryDiv.innerHTML = html;
 
+            // --- MÁY PHÁT NHẠC (SPOTIFY / DEEZER / SOUNDCLOUD) ĐÃ CẬP NHẬT ---
             const musicDiv = document.getElementById('p-playlist');
             if (u.playlist && u.playlist.length > 0) {
                 musicDiv.innerHTML = u.playlist.map(item => {
-                    if (item.type === 'deezer' || item.type === 'soundcloud') {
+                    let val = item.value || item;
+                    let type = item.type || 'text';
+
+                    if (type === 'deezer') {
                         return `<div style="margin-bottom: 10px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                                    ${item.type === 'deezer' 
-                                        ? `<iframe src="https://widget.deezer.com/widget/dark/track/${item.value}" width="100%" height="80" frameBorder="0" allowtransparency="true" allow="encrypted-media; clipboard-write"></iframe>`
-                                        : item.value}
+                                    <iframe src="https://widget.deezer.com/widget/dark/track/${val}" width="100%" height="80" frameBorder="0" allowtransparency="true" allow="encrypted-media; clipboard-write"></iframe>
+                                </div>`;
+                    } else if (type === 'soundcloud') {
+                        // Nhận diện iframe html từ Backend (áp dụng cho cả Spotify API và SoundCloud)
+                        return `<div style="margin-bottom: 10px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                    ${val}
                                 </div>`;
                     } else {
-                        return `<div style="font-size:13px; color:#d81b60; margin:8px 0; background:#fff; padding:10px; border-radius:8px; border-left:3px solid #ff69b4;"><i class="fas fa-headphones-alt"></i> ${item.value}</div>`;
+                        // Hiển thị dạng chữ thông thường
+                        return `<div style="font-size:13px; color:#d81b60; margin:8px 0; background:#fff; padding:10px; border-radius:8px; border-left:3px solid #ff69b4;"><i class="fas fa-headphones-alt"></i> ${val}</div>`;
                     }
                 }).join('');
             } else {
@@ -165,6 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? u.hobbies.map(h => `<span class="tag"><i class="fas fa-hashtag" style="font-size:10px;"></i> ${h}</span>`).join('') : '<span style="color:#999; font-size:13px; font-style:italic;">Chưa cập nhật sở thích.</span>';
 
             drawVietnamRoute(u.lat, u.lon, myLat, myLon, map);
+            currentViewedUserId = u.id;
+            profileStartTime = Date.now();
         }
 
         window.handleFriendAction = function() {
@@ -383,6 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.nextUser = function() { 
             if(users.length === 0) return;
+            sendDwellTime(); // Gửi data người cũ đi trước khi chuyển
             animateTransition(() => {
                 currentIndex = (currentIndex + 1) % users.length; 
                 renderUser(currentIndex); 
@@ -391,6 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.prevUser = function() { 
             if(users.length === 0) return;
+            sendDwellTime(); // Gửi data người cũ đi trước khi chuyển
             animateTransition(() => {
                 currentIndex = (currentIndex - 1 + users.length) % users.length; 
                 renderUser(currentIndex); 
@@ -408,6 +438,85 @@ document.addEventListener("DOMContentLoaded", () => {
             const val = document.getElementById('province-select').value;
             document.getElementById('radius-input').disabled = (val !== 'ALL');
         };
+        // --- TÌM KIẾM NHẠC TRỰC TIẾP CHO CHILL RADIO ---
+        // --- ẨN / HIỆN POP-UP NHẠC ---
+        window.toggleMusicPlayer = function() {
+            const modal = document.getElementById('music-modal');
+            if (modal.style.display === 'none' || modal.style.display === '') {
+                modal.style.display = 'flex';
+                modal.style.flexDirection = 'column';
+            } else {
+                modal.style.display = 'none'; // Chỉ ẩn khung, iframe vẫn sống nên nhạc vẫn hát
+            }
+        };
+
+        // --- TÌM KIẾM NHẠC TRỰC TIẾP CHO CHILL RADIO ---
+       // --- TÌM KIẾM NHẠC TRỰC TIẾP (BẢN ĐỔ RA 5 KẾT QUẢ) ---
+        window.searchRadioMusic = function() {
+            const input = document.getElementById('radio-search-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const iconBtn = document.getElementById('radio-search-btn');
+            const resultsDiv = document.getElementById('radio-results');
+            iconBtn.className = 'fas fa-spinner fa-spin'; 
+
+            fetch(`/api/music/search/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    iconBtn.className = 'fas fa-search'; 
+                    if (data.status === 'ok' && data.tracks.length > 0) {
+                        // Vẽ từng bài hát ra danh sách
+                        let html = '';
+                        data.tracks.forEach(track => {
+                            // Dùng escape để tránh lỗi khi tên bài hát có dấu nháy đơn
+                            const safeName = track.name.replace(/'/g, "\\'"); 
+                            html += `
+                                <div class="track-item" onclick="playRadioTrack('${track.id}', '${safeName}')">
+                                    <img src="${track.image}" alt="cover">
+                                    <div class="track-info">
+                                        <div class="track-name">${track.name}</div>
+                                        <div class="track-artist">${track.artist}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        resultsDiv.innerHTML = html;
+                        resultsDiv.style.display = 'block'; // Hiện rèm xuống
+                    } else {
+                        resultsDiv.innerHTML = '<div style="padding: 15px; color: #aaa; text-align: center; font-size: 13px;">Không tìm thấy bài hát này 😢</div>';
+                        resultsDiv.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    iconBtn.className = 'fas fa-search';
+                    console.error("Lỗi API:", err);
+                });
+        };
+
+        // --- HÀM PHÁT NHẠC KHI NGƯỜI DÙNG BẤM CHỌN BÀI ---
+        window.playRadioTrack = function(trackId, trackName) {
+            const iframe = document.getElementById('radio-iframe');
+            
+            // Cập nhật iframe với bài hát được chọn
+            iframe.src = 'https://' + 'open.spotify.com/embed/track/' + trackId + '?utm_source=generator&theme=0&autoplay=1';
+            
+            // Đổi chữ trong ô tìm kiếm cho đẹp
+            const input = document.getElementById('radio-search-input');
+            input.value = '';
+            input.placeholder = "Đang phát: " + trackName;
+            
+            // Thu rèm danh sách lên
+            document.getElementById('radio-results').style.display = 'none';
+        };
+
+        // Bấm ra ngoài khoảng trống thì tự động thu rèm danh sách lại cho gọn
+        document.addEventListener('click', function(e) {
+            const resultsDiv = document.getElementById('radio-results');
+            if (resultsDiv && !e.target.closest('.radio-search')) {
+                resultsDiv.style.display = 'none';
+            }
+        });
 
         window.openChat = function(partnerId = null, partnerName = null) {
             if (partnerId) {
@@ -432,12 +541,29 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         window.toggleConversationList = function() {
+            
             const listModal = document.getElementById('list-modal');
             if (listModal.style.display === 'flex') {
                 listModal.style.display = 'none';
             } else {
                 listModal.style.display = 'flex';
                 fetchConversations();
+            }
+        };
+        // --- CHILL RADIO TOGGLE ---
+        window.toggleRadio = function() {
+            const body = document.getElementById('radio-body');
+            const icon = document.getElementById('radio-icon');
+            const header = document.querySelector('.radio-header');
+
+            if (body.style.display === 'block') {
+                body.style.display = 'none';
+                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                header.style.borderRadius = '10px';
+            } else {
+                body.style.display = 'block';
+                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+                header.style.borderRadius = '10px 10px 0 0';
             }
         };
 
@@ -500,3 +626,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (e) { showError(e.message); }
 });
+// --- HÀM GỬI DỮ LIỆU AI VỀ MÁY CHỦ ---
+        window.sendDwellTime = function() {
+            if (!currentViewedUserId || profileStartTime === 0) return;
+            
+            let timeSpent = Date.now() - profileStartTime; // Tính số mili-giây nán lại
+            
+            // Nếu người dùng xem hồ sơ này trên 3 giây (3000ms), AI sẽ ghi nhận
+            if (timeSpent > 3000) {
+                console.log(`🤖 AI Nhận diện: Đã xem hồ sơ ID ${currentViewedUserId} trong ${(timeSpent/1000).toFixed(1)} giây.`);
+                
+                fetch('/api/ai/record-dwell/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken() // Hàm lấy token bảo mật bạn đã viết sẵn
+                    },
+                    body: JSON.stringify({
+                        viewed_user_id: currentViewedUserId,
+                        time_spent: timeSpent
+                    })
+                });
+            }
+        };

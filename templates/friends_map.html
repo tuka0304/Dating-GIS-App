@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản đồ Bạn bè 🗺️ | Dating GIS</title>
+    <!-- Thư viện bản đồ Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Đảm bảo bản đồ chắc chắn tràn viền 100% */
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #f0f2f5; font-family: sans-serif; }
+        #full-map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* Nút quay lại đè lên trên bản đồ */
+        .back-btn { 
+            position: absolute; top: 20px; left: 20px; z-index: 1000; 
+            background: linear-gradient(45deg, #ff69b4, #d81b60); color: white; 
+            padding: 10px 20px; border-radius: 25px; text-decoration: none; 
+            font-weight: bold; box-shadow: 0 4px 15px rgba(216, 27, 96, 0.4); 
+            transition: 0.3s;
+        }
+        .back-btn:hover { transform: scale(1.05); }
+
+        /* Khung Avatar rải trên bản đồ */
+        .friend-marker-img { 
+            border-radius: 50%; border: 3px solid #9b59b6; 
+            object-fit: cover; width: 45px; height: 45px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.4);
+            transition: 0.3s; background: white;
+        }
+        .friend-marker-img:hover { transform: scale(1.2); border-color: #ff69b4; z-index: 1000; position: relative;}
+    </style>
+</head>
+<body>
+    <!-- Nút back -->
+    <a href="{% url 'home' %}" class="back-btn"><i class="fas fa-arrow-left"></i> Về trang Hẹn hò</a>
+    
+    <!-- Dữ liệu Bạn bè đẩy từ views sang -->
+    {{ friends_json|json_script:"friends-data" }}
+    
+    <!-- Khung chứa bản đồ -->
+    <div id="full-map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 1. Cứu hộ JS: Bọc ngoặc kép để tránh crash nếu biến rỗng
+            const myLat = parseFloat("{{ my_profile.latitude|default:'10.7769' }}") || 10.7769;
+            const myLon = parseFloat("{{ my_profile.longitude|default:'106.7009' }}") || 106.7009;
+            
+            // 2. Khởi tạo bản đồ (Zoom level 6 để thấy cả nước)
+            const map = L.map('full-map', {zoomControl: false}).setView([myLat, myLon], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            L.control.zoom({position: 'bottomright'}).addTo(map);
+
+            // 3. Đánh dấu vị trí của BẠN
+            const myIcon = L.divIcon({html: '<div style="font-size:30px; text-shadow: 0 2px 5px rgba(0,0,0,0.5);">📍</div>', className: ''});
+            L.marker([myLat, myLon], {icon: myIcon}).addTo(map).bindPopup("<b style='color:#d81b60;'>Bạn đang ở đây</b>").openPopup();
+
+            // 4. Đọc danh sách bạn bè và rải lên bản đồ
+            try {
+                const friends = JSON.parse(document.getElementById('friends-data').textContent);
+                
+                friends.forEach(f => {
+                    // Tránh lỗi tọa độ của bạn bè
+                    const fLat = parseFloat(f.lat);
+                    const fLon = parseFloat(f.lon);
+                    
+                    if (!isNaN(fLat) && !isNaN(fLon)) {
+                        const avatarUrl = f.avatar ? f.avatar : `https://ui-avatars.com/api/?name=${f.name}&background=9b59b6&color=fff`;
+                        
+                        // Ép ảnh thành icon Leaflet
+                        const friendIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: `<img src="${avatarUrl}" class="friend-marker-img">`,
+                            iconSize: [45, 45],
+                            iconAnchor: [22, 22] // Căn giữa ảnh vào đúng tọa độ
+                        });
+
+                        // Gắn lên bản đồ kèm popup
+                        const marker = L.marker([fLat, fLon], {icon: friendIcon}).addTo(map);
+                        marker.bindPopup(`
+                            <div style="text-align: center; width: 140px;">
+                                <h4 style="margin: 5px 0; color: #8e44ad; font-size: 15px;">${f.name}</h4>
+                                <p style="margin: 0 0 10px 0; font-size: 12px; color: #666; font-style: italic;">"${f.status}"</p>
+                            </div>
+                        `);
+                    }
+                });
+            } catch (err) {
+                console.error("Lỗi vẽ bạn bè lên bản đồ:", err);
+            }
+        });
+    </script>
+</body>
+</html>
