@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận mã OTP</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2">
+</head>
+<body class="page-login">
+    <div class="box">
+        <h2>Nhập mã OTP ⏳</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Mã 6 số đã được gửi tới <b>{{ email }}</b>. Mã chỉ có hiệu lực trong 1 phút.</p>
+        
+        {% if error %}
+            <div style="background: #fff1f0; border: 1px solid #ffa39e; padding: 10px; border-radius: 8px; margin-bottom: 20px; color: #cf1322; text-align: center; font-size: 13px;">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="otp" placeholder="Nhập mã 6 chữ số" required maxlength="6" style="letter-spacing: 5px; text-align: center; font-size: 20px; font-weight: bold;">
+            <button type="submit">Xác nhận</button>
+        </form>
+
+        <div class="footer">
+            <a href="{% url 'forgot_password' %}">Gửi lại mã mới</a>
+        </div>
+    </div>
+</body>
+</html>

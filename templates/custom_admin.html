@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Trang Quản Trị - Dating GIS</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=999">
 </head>
 <body class="page-admin">
     <div class="navbar">
@@ -14,18 +14,11 @@
     </div>
 
     <div class="container">
+        
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-users"></i></div>
                 <div class="stat-info"><h3>{{ total_users }}</h3><p>Thành viên</p></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-user-friends"></i></div>
-                <div class="stat-info"><h3>{{ total_friends }}</h3><p>Lượt xin kết bạn</p></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
-                <div class="stat-info"><h3>{{ total_dating }}</h3><p>Lượt tỏ tình</p></div>
             </div>
         </div>
 
@@ -37,7 +30,7 @@
                         <th>ID</th>
                         <th>Hồ sơ</th>
                         <th>Tài khoản</th>
-                        <th>Tình trạng</th>
+                        <th>Email</th>
                         <th>Thao tác quản lý</th>
                     </tr>
                 </thead>
@@ -55,13 +48,7 @@
                         </td>
                         <td>{{ p.user.username }}</td>
                         <td>
-                            {% if not p.user.is_active %}
-                                <span style="background: #e74c3c; color: white; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;"><i class="fas fa-ban"></i> Bị Đình Chỉ</span>
-                            {% elif p.marital_status == 'Đang hẹn hò' %}
-                                <span style="background: #ffb6c1; color: #880e4f; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;"><i class="fas fa-heart"></i> Có bồ</span>
-                            {% else %}
-                                <span style="background: #eee; color: #555; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;">Độc thân</span>
-                            {% endif %}
+                            <b>{{ p.user.email|default:"Chưa cập nhật" }}</b>
                         </td>
                         <td>
                             <div class="action-group">
@@ -127,6 +114,82 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="table-container" style="margin-top: 30px;">
+            <h3 style="color: #f39c12; margin-top: 0;"><i class="fas fa-flag"></i> Báo Cáo Bài Viết Chờ Xử Lý</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Người báo cáo</th>
+                        <th>Lý do vi phạm</th>
+                        <th>Nội dung bài viết bị báo cáo</th>
+                        <th>Thời gian</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rep in reports %}
+                    <tr>
+                        <td><b style="color: #d81b60;">{{ rep.user.username }}</b></td>
+                        <td style="max-width: 250px; line-height: 1.5; color: #555;"><i>"{{ rep.reason }}"</i></td>
+                        <td style="max-width: 200px; color: #555; font-style: italic;">
+                            {{ rep.post.content|truncatechars:40|default:"[Bài viết chứa hình ảnh / Không có Text]" }}
+                        </td>
+                        <td>{{ rep.created_at|date:"H:i d/m/Y" }}</td>
+                        <td>
+                            <div class="action-group">
+                                <a href="{% url 'feed' %}#post-{{ rep.post.id }}">
+                                    <button class="btn btn-avatar" style="background: #3498db;"><i class="fas fa-eye"></i> Xem bài</button>
+                                </a>
+                                
+                                <a href="{% url 'admin_resolve_report' rep.id %}" onclick="return confirm('Bỏ qua và đánh dấu là đã xử lý xong báo cáo này?')">
+                                    <button class="btn btn-unlock"><i class="fas fa-check"></i> Đã xử lý</button>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #888; padding: 30px;">Không có báo cáo vi phạm nào trên Bảng tin. Cộng đồng đang rất văn minh! ✨</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="section-title"><i class="fas fa-history"></i> Nhật ký hành động của Admin</div>
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Thời gian</th>
+            <th>Admin</th>
+            <th>Hành động</th>
+            <th>Đối tượng bị xử lý</th>
+            <th>Lý do / Bằng chứng</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in admin_logs %}
+        <tr>
+            <td>{{ log.timestamp|date:"d/m/Y H:i" }}</td>
+            <td style="color: #d81b60; font-weight: bold;">{{ log.admin.username }}</td>
+            <td>
+                {% if log.action_type == 'DELETE_POST' %}
+                    <span style="background: #ffebee; color: #c62828; padding: 3px 8px; border-radius: 4px; font-size: 12px;"><i class="fas fa-trash"></i> Xóa bài</span>
+                {% elif log.action_type == 'SUSPEND_USER' %}
+                    <span style="background: #fff3e0; color: #e65100; padding: 3px 8px; border-radius: 4px; font-size: 12px;"><i class="fas fa-ban"></i> Đình chỉ</span>
+                {% else %}
+                    {{ log.get_action_type_display }}
+                {% endif %}
+            </td>
+            <td style="font-style: italic; color: #555;">{{ log.target_info }}</td>
+            <td>{{ log.reason }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align: center; color: #999;">Chưa có lịch sử thao tác nào.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
     </div>
 </body>
 </html>

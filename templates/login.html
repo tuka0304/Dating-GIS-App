@@ -33,6 +33,9 @@
             {% csrf_token %}
             <input type="text" name="username" placeholder="Tên đăng nhập" required autofocus>
             <input type="password" name="password" placeholder="Mật khẩu" required>
+            <div style="text-align: right; margin-bottom: 10px;">
+                <a href="{% url 'forgot_password' %}" style="font-size: 12px; color: #d81b60; text-decoration: none;">Quên mật khẩu?</a>
+            </div>
             <button type="submit">Đăng nhập</button>
         </form>
 

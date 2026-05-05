@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 import datetime
 
 # DANH SÁCH 34 TỈNH THÀNH (Giữ nguyên của bạn)
@@ -80,6 +81,7 @@ class FriendRequest(models.Model):
     
     timestamp = models.DateTimeField(auto_now_add=True)
 
+   
     class Meta:
         # Chống spam: A chỉ được gửi cho B 1 lời mời đang chờ
         unique_together = ('sender', 'receiver')
@@ -90,10 +92,12 @@ class FriendRequest(models.Model):
 
 # --- CLASS TIN NHẮN (Giữ nguyên) ---
 class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    sender = models.ForeignKey(User, on_delete=models   .CASCADE, related_name='sent_messages')
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
     content = models.TextField(verbose_name="Nội dung")
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_anonymous = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.sender} -> {self.receiver}: {self.content[:20]}"
@@ -118,3 +122,80 @@ class Appeal(models.Model):
 
     def __str__(self):
         return f"Kháng cáo từ {self.username}"
+    
+class PasswordResetOTP(models.Model):
+    email = models.EmailField()
+    otp_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        # Kiểm tra nếu thời gian hiện tại chưa quá 1 phút (60 giây) so với lúc tạo
+        return timezone.now() < self.created_at + datetime.timedelta(minutes=1)
+    
+# Thêm vào cuối file models.py
+class Post(models.Model):
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
+    content = models.TextField(blank=True, verbose_name="Nội dung")
+    image = models.ImageField(upload_to='posts/', blank=True, null=True, verbose_name="Ảnh đính kèm")
+    likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at'] # Bài mới nhất xếp lên đầu
+
+    def __str__(self):
+        return f"Bài viết của {self.author.username}"
+    
+class Comment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+class Report(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reports')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_resolved = models.BooleanField(default=False) # Đánh dấu admin đã xử lý chưa
+
+    class Meta:
+        ordering = ['-created_at']
+
+class PostImage(models.Model):
+    # CHÚ Ý ĐOẠN related_name='images' Ở CUỐI:
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='post_images/')
+
+class AdminLog(models.Model):
+    ACTION_CHOICES = [
+        ('DELETE_POST', 'Xóa bài viết'),
+        ('DELETE_PHOTO', 'Xóa ảnh'),
+        ('SUSPEND_USER', 'Đình chỉ tài khoản'),
+        ('WARNING', 'Cảnh cáo'),
+    ]
+    
+    # Ai là người thực hiện? (Nếu Admin này bị xóa tài khoản thì log vẫn còn, hiện null)
+    admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='actions_made')
+    
+    # Loại hành động
+    action_type = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    
+    # Đối tượng bị xử lý (Lưu bằng CHỮ để không bị mất khi đối tượng bị xóa thật)
+    # Ví dụ: "Bài viết ID 45 của user xXx", "Tài khoản ID 10: nguyen_van_a"
+    target_info = models.CharField(max_length=255) 
+    
+    # Lý do xử lý (bằng chứng)
+    reason = models.TextField(blank=True)
+    
+    # Thời gian
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.admin} đã {self.get_action_type_display()} - {self.target_info}"

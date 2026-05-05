@@ -1,0 +1,9 @@
+1. Lưu trữ bằng chứng. (done)
+
+2. Tìm kiếm map. (done)
+
+3.  404. (đã fix)
+
+4. Trang giới thiệu app
+
+5. fix reset

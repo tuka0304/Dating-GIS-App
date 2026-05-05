@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import UserProfile
+from .models import Post
 
 class RegisterForm(UserCreationForm):
     full_name = forms.CharField(label="Họ và tên", max_length=100)
@@ -38,5 +39,17 @@ class ProfileUpdateForm(forms.ModelForm):
             'bio': 'Status / Giới thiệu',
             'music_playlist': 'Playlist nhạc (Tên bài hát)',
             'marital_status': 'Tình trạng quan hệ'
+        }
+class PostForm(forms.ModelForm):
+    class Meta:
+        model = Post
+        fields = ['content', 'image']
+        widgets = {
+            'content': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': 'Hôm nay bạn thế nào? Chia sẻ một chút nhé...'}),
+            'image': forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*'}),
+        }
+        labels = {
+            'content': '',
+            'image': 'Đính kèm ảnh'
         }
     

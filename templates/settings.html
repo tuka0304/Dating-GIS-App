@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <title>Cài đặt hồ sơ</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body class="page-settings">
@@ -23,6 +25,8 @@
         
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
+            <input type="hidden" id="map_interacted" name="map_interacted" value="false">
+
             <div class="form-group"><label>Họ và tên:</label>{{ form.full_name }}</div>
             <div class="form-group" style="display: flex; gap: 15px;">
                 <div style="flex: 1;"><label>Ngày sinh:</label>{{ form.birth_date }}</div>
@@ -30,13 +34,29 @@
             </div>
             <div class="form-group"><label>Tình trạng quan hệ:</label> {{ form.marital_status }}</div>
             <div class="form-group"><label>Khu vực sinh sống:</label>{{ form.province }}</div>
-            <div class="form-group"><label>Địa chỉ chi tiết:</label>{{ form.address }}</div>
+            
+            <div class="form-group">
+                <label>Địa chỉ chi tiết:</label>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        {{ form.address }}
+                    </div>
+                    <button type="button" onclick="searchAddressOnMap(event)" style="background: #3498db; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; height: 38px; margin-top: 2px;">
+                        <i class="fas fa-search-location"></i> Tìm map
+                    </button>
+                </div>
+            </div>
+
             <div class="form-group gps-box">
                 <label style="color: #c2185b;">📍 Vị trí:</label>
                 <div style="margin-bottom: 10px;">
                     <button type="button" class="btn-geo" onclick="getLocation()">
                         <i class="fas fa-location-arrow"></i> Lấy vị trí hiện tại
                     </button>
+
+                    <div id="settings-mini-map" style="height: 250px; width: 100%; margin-top: 15px; border-radius: 12px; border: 2px solid #ffb6c1; box-shadow: 0 4px 10px rgba(0,0,0,0.1);"></div>
+                    <small style="display:block; margin-top:5px; color:#888;">* Bạn có thể click lên bản đồ, kéo ghim hoặc dùng nút "Tìm map" để chọn vị trí.</small>
+                    
                     <span id="geo-msg" style="font-size:13px; margin-left:10px;"></span>
                 </div>
                 <div style="display: flex; gap: 15px;">
@@ -52,6 +72,7 @@
                     </div>
                 </div>
             </div>
+            
             <div class="form-group"><label>📷 Ảnh đại diện:</label>{{ form.avatar }}</div>
             <div class="form-group"><label>🖼️ Ảnh bìa:</label>{{ form.cover_photo }}</div>
             <div class="form-group"><label>📝 Giới thiệu (Bio):</label>{{ form.bio }}</div>
@@ -65,6 +86,82 @@
             <div style="text-align: center; margin-top: 20px;"><a href="{% url 'home' %}">Quay lại trang chủ</a></div>
         </form>
     </div>
+
     <script src="{% static 'js/script.js' %}?v=1"></script>
+    
+    <script>
+        function searchAddressOnMap(event) {
+            // Django tự động sinh ra ID id_address và id_province cho form
+            var addressInput = document.getElementById('id_address');
+            var provinceSelect = document.getElementById('id_province');
+            
+            if (!addressInput || addressInput.value.trim() === '') {
+                alert("Vui lòng nhập địa chỉ chi tiết trước khi tìm!");
+                return;
+            }
+
+            // Ghép địa chỉ
+            var fullAddress = addressInput.value.trim();
+            if (provinceSelect) {
+                var provinceName = provinceSelect.options[provinceSelect.selectedIndex].text;
+                fullAddress += ", " + provinceName;
+            }
+            fullAddress += ", Việt Nam";
+
+            // Hiệu ứng loading trên nút
+            var searchBtn = event.currentTarget;
+            var originalText = searchBtn.innerHTML;
+            searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tìm...';
+            searchBtn.disabled = true;
+
+            // Gọi API Nominatim (miễn phí)
+            var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(fullAddress);
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    searchBtn.innerHTML = originalText;
+                    searchBtn.disabled = false;
+
+                    if (data && data.length > 0) {
+                        var lat = parseFloat(data[0].lat);
+                        var lon = parseFloat(data[0].lon);
+
+                        // Bay đến tọa độ và dời ghim (lấy biến map và marker từ file script.js của bạn)
+                        if (typeof window.settingsMap !== 'undefined') {
+                            window.settingsMap.flyTo([lat, lon], 16); 
+                            }
+                        if (typeof window.settingsMarker !== 'undefined') {
+                             window.settingsMarker.setLatLng([lat, lon]);
+                                }
+
+                        // Điền vào thẻ input ẩn
+                        var latInput = document.getElementById('id_latitude');
+                        var lonInput = document.getElementById('id_longitude');
+                        if (latInput) latInput.value = lat.toFixed(6);
+                        if (lonInput) lonInput.value = lon.toFixed(6);
+
+                        // Hiện số màu hồng ra giao diện
+                        var latDisplay = document.getElementById('lat-display');
+                        var lonDisplay = document.getElementById('lon-display');
+                        if (latDisplay) latDisplay.innerText = lat.toFixed(6);
+                        if (lonDisplay) lonDisplay.innerText = lon.toFixed(6);
+                        
+                        // Kích hoạt thẻ map_interacted để báo cho Database biết
+                        var mapInteracted = document.getElementById('map_interacted');
+                        if (mapInteracted) mapInteracted.value = 'true';
+
+                    } else {
+                        alert("Không tìm ra địa chỉ này trên bản đồ 😢\nBạn thử nhập ngắn gọn lại (VD: Chỉ cần Tên đường, Quận) xem sao nhé!");
+                    }
+                })
+                .catch(error => {
+                    console.error("Lỗi tìm map:", error);
+                    searchBtn.innerHTML = originalText;
+                    searchBtn.disabled = false;
+                    alert("Có lỗi mạng xảy ra khi tìm kiếm bản đồ!");
+                });
+        }
+    </script>
 </body>
 </html>

@@ -1,0 +1,224 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bảng Tin 💖 | Dating GIS</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body { background: #fff0f5; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0;}
+        .container { max-width: 600px; margin: 20px auto; padding: 0 15px; padding-bottom: 100px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .back-btn { background: white; color: #d81b60; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 10px rgba(216, 27, 96, 0.15); transition: 0.3s; }
+        .back-btn:hover { transform: translateY(-2px); }
+        
+        .post-box { background: white; border-radius: 15px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.1); border: 1px solid #ffe4e1; }
+        .post-box textarea { width: 100%; border: 1px solid #ffb6c1; border-radius: 10px; padding: 12px; outline: none; margin-bottom: 15px; font-family: inherit; font-size: 14px; box-sizing: border-box;}
+        .post-box button { background: linear-gradient(45deg, #ff69b4, #d81b60); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .post-box button:hover { transform: scale(1.05); }
+        
+        .post-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #ffe4e1; transition: 0.3s;}
+        .post-header { display: flex; align-items: center; margin-bottom: 15px; }
+        .post-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 2px solid #ffb6c1; }
+        .post-author { font-weight: bold; color: #d81b60; font-size: 15px; }
+        .post-time { font-size: 12px; color: #999; margin-top: 3px;}
+        .post-content { color: #444; line-height: 1.5; margin-bottom: 15px; font-size: 14px; }
+        
+        /* Hiển thị lưới ảnh */
+        .post-images-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 15px; }
+        .post-img-item { width: 100%; height: 250px; border-radius: 10px; object-fit: cover; background: #fafafa; cursor: zoom-in; transition: 0.2s; }
+        .post-img-item:hover { opacity: 0.9; }
+
+        .post-card:target { border: 2px solid #e91e63; box-shadow: 0 0 20px rgba(233, 30, 99, 0.4); animation: highlightPost 2s ease-out; }
+        @keyframes highlightPost { 0% { background-color: #fff0f5; } 100% { background-color: white; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="color: #d81b60; margin: 0;"><i class="fas fa-stream"></i> Bảng Tin</h2>
+            <a href="{% url 'home' %}" class="back-btn"><i class="fas fa-map-marked-alt"></i> Về Bản Đồ</a>
+        </div>
+
+       <div class="post-box">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <textarea name="content" placeholder="Hôm nay bạn thế nào? Chia sẻ một chút nhé..." rows="3"></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 13px; color: #d81b60; font-weight: bold; flex: 1;">
+                        <i class="fas fa-images"></i> 
+                        <input type="file" name="images" multiple accept="image/*" style="max-width: 200px; font-size: 12px; font-family: inherit;">
+                    </div>
+                    <button type="submit"><i class="fas fa-paper-plane"></i> Đăng bài</button>
+                </div>
+            </form>
+        </div>
+
+        {% for post in posts %}
+        <div class="post-card" id="post-{{ post.id }}">
+            <div class="post-header">
+                {% if post.author.profile.avatar %}
+                    <img src="{{ post.author.profile.avatar.url }}" class="post-avatar">
+                {% else %}
+                    <img src="https://ui-avatars.com/api/?name={{ post.author.profile.full_name }}&background=ffb6c1&color=fff" class="post-avatar">
+                {% endif %}
+                <div>
+                    <div class="post-author">{{ post.author.profile.full_name }}</div>
+                    <div class="post-time">{{ post.created_at|date:"H:i - d/m/Y" }}</div>
+                </div>
+            </div>
+            
+            {% if post.content %}
+                <div class="post-content">{{ post.content|linebreaks }}</div>
+            {% endif %}
+            
+            <div class="post-images-grid">
+                {% for p_img in post.images.all %}
+                    <img src="{{ p_img.image.url }}" class="post-img-item" onclick="viewImage('{{ p_img.image.url }}')">
+                {% empty %}
+                    {% if post.image %}
+                        <img src="{{ post.image.url }}" class="post-img-item" style="grid-column: 1/-1; height: auto; max-height: 500px;" onclick="viewImage('{{ post.image.url }}')">
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <div style="margin-top: 15px; padding-bottom: 10px; font-size: 13px; color: #666; border-bottom: 1px solid #ffe4e1; display: flex; align-items: center;">
+                <span style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-heart" style="color: #d81b60;"></i> <span id="like-count-{{ post.id }}">{{ post.likes.count }}</span> Thích 
+                </span>
+                <span style="margin-left: 15px; display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-comment" style="color: #880e4f;"></i> {{ post.comments.count }} Bình luận
+                </span>
+            </div>
+
+            <div class="post-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px; margin-top: 12px;">
+                <button id="btn-like-{{ post.id }}" onclick="likePost({{ post.id }})" style="border: none; background: transparent; color: #888; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 14px;">
+                    <i class="fas fa-heart"></i> Thích
+                </button>
+                <button onclick="toggleComments({{ post.id }})" style="border: none; background: transparent; color: #880e4f; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 14px;">
+                    <i class="fas fa-comment"></i> Bình luận
+                </button>
+                
+                <div style="flex: 1;"></div> 
+                
+                <button onclick="reportPost({{ post.id }})" style="border: none; background: transparent; color: #f39c12; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 13px;">
+                    <i class="fas fa-flag"></i> Báo cáo
+                </button>
+                
+                {% if request.user.is_superuser %}
+                <button onclick="deletePost({{ post.id }})" style="border: none; background: transparent; color: #e74c3c; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 13px;">
+                    <i class="fas fa-trash"></i> Xóa
+                </button>
+                {% endif %}
+            </div>
+
+            <div id="comments-{{ post.id }}" style="display: none; margin-top: 15px; background: #fff0f5; padding: 12px; border-radius: 8px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="comment-input-{{ post.id }}" placeholder="Viết bình luận..." style="flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ffb6c1; outline: none; font-family: inherit;">
+                    <button onclick="submitComment({{ post.id }})" style="background: linear-gradient(45deg, #ff69b4, #d81b60); color: white; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: bold;">Gửi</button>
+                </div>
+                
+                {% for comment in post.comments.all %}
+                <div style="margin-bottom: 10px; font-size: 13px; line-height: 1.4;">
+                    <strong style="color: #c2185b;">{{ comment.user.username }}:</strong> 
+                    <span style="color: #444;">{{ comment.content }}</span>
+                </div>
+                {% empty %}
+                <div style="font-size: 12px; color: #999; font-style: italic; text-align: center;">Chưa có bình luận nào. Mở lời đi nào!</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; color: #999; padding: 40px; background: white; border-radius: 15px; border: 1px dashed #ffb6c1;">
+            <i class="fas fa-camera-retro" style="font-size: 40px; color: #ffd1dc; margin-bottom: 10px;"></i>
+            <p>Chưa có bài viết nào.</p>
+            <p style="font-size: 13px;">Hãy là người đầu tiên chia sẻ khoảnh khắc nhé! 💕</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function getCSRFToken() {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, 10) === ('csrftoken=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(10));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        window.viewImage = function(url) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:9999; cursor:zoom-out; opacity:0; transition:opacity 0.3s;';
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.cssText = 'max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); transform:scale(0.8); transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);';
+            overlay.appendChild(img);
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => { overlay.style.opacity = '1'; img.style.transform = 'scale(1)'; });
+            overlay.onclick = function() {
+                overlay.style.opacity = '0';
+                img.style.transform = 'scale(0.8)';
+                setTimeout(() => document.body.removeChild(overlay), 300);
+            };
+        };
+
+        window.toggleComments = function(postId) {
+            const div = document.getElementById('comments-' + postId);
+            if (div) { div.style.display = (div.style.display === 'none' || div.style.display === '') ? 'block' : 'none'; }
+        };
+
+        window.submitComment = function(postId) {
+            const input = document.getElementById('comment-input-' + postId);
+            if (!input) return;
+            const content = input.value.trim();
+            if (!content) { alert("Bạn chưa nhập bình luận!"); return; }
+            fetch(`/api/post/${postId}/comment/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()},
+                body: JSON.stringify({content: content})
+            })
+            .then(res => res.json())
+            .then(data => { if(data.status === 'ok') location.reload(); });
+        };
+
+        window.reportPost = function(postId) {
+            const reason = prompt("Lý do bạn báo cáo bài viết này là gì?");
+            if (reason && reason.trim() !== '') {
+                fetch(`/api/post/${postId}/report/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()},
+                    body: JSON.stringify({reason: reason.trim()})
+                })
+                .then(res => res.json())
+                .then(data => alert(data.message || "Đã gửi báo cáo!"));
+            }
+        };
+
+        window.deletePost = function(postId) {
+            if(confirm("XÁC NHẬN ADMIN: Bạn có chắc chắn muốn xóa vĩnh viễn bài viết này?")) {
+                fetch(`/api/post/${postId}/delete/`, {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': getCSRFToken()}
+                })
+                .then(res => res.json())
+                .then(data => { if(data.status === 'ok') location.reload(); });
+            }
+        };
+
+        window.likePost = function(postId) {
+            fetch(`/bang-tin/like/${postId}/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': getCSRFToken()}
+            }).then(() => location.reload());
+        };
+    </script>
+</body>
+</html>

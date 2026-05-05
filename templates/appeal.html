@@ -17,7 +17,9 @@
             <p style="color: #949ba4; font-size: 14px; margin-bottom: 20px;">Tài khoản bị khóa. Hãy cho Admin biết lý do để được xem xét mở lại nhé!</p>
             <form method="post">
                 {% csrf_token %}
-                <input type="text" name="username" value="{{ username }}" readonly style="color: #888;">
+                <!-- Đã xóa readonly, thêm placeholder và bắt buộc nhập (required) -->
+                <input type="text" name="username" value="{{ username }}" placeholder="Nhập tên tài khoản (bắt buộc)" required>
+                
                 <textarea name="message" rows="5" placeholder="Nhập lý do kháng cáo / lời xin lỗi của bạn..." required></textarea>
                 <button type="submit">Gửi cho Admin</button>
             </form>
